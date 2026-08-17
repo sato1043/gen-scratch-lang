@@ -1,0 +1,32 @@
+{
+  "name": "gen-scratch-lang",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "言葉から Scratch のプログラムを生成する解析・生成環境",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.12.0"
+  },
+  "scripts": {
+    "test": "node tools/run-tests.ts",
+    "typecheck": "tsc",
+    "render": "node src/cli.ts render",
+    "catalog": "node tools/cli.ts catalog"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "canvas": "^3.2.3",
+    "jsdom": "^29.1.1",
+    "jszip": "^3.10.1",
+    "parse-sb3-blocks": "^0.5.2",
+    "scratch-parser": "^6.0.1",
+    "scratchblocks": "^3.7.1",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "~24.12.0",
+    "scratch-blocks": "^2.1.19",
+    "typescript": "^7.0.2"
+  }
+}

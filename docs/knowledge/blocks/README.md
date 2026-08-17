@@ -1,0 +1,160 @@
+ブロック解説
+============
+
+Scratch の core 9 カテゴリのブロックを、カテゴリごとに解説する。各ページは
+2 層でできている。カテゴリが何をするかの説明は人が書き、それ以外は台帳から生成する。
+一覧を手で書くと台帳と二重管理になるためである。
+
+生成する側は 3 つでできている。引数の欄の読み方を述べる凡例と、記法・opcode・形・引数の
+4 列を持つ一覧と、選択肢が長い引数だけを回す末尾の表である。引数の型と選択肢の綴りは
+この一覧にあり、この索引ページには無い。
+
+| ページ | 中身 |
+|---|---|
+| [動き](motion.md) | 位置と向きを変える |
+| [見た目](looks.md) | 吹き出し・コスチューム・大きさ・効果 |
+| [音](sound.md) | 音を鳴らす・音量 |
+| [イベント](events.md) | スクリプトの起点・メッセージ |
+| [制御](control.md) | 待つ・繰り返す・条件・クローン |
+| [調べる](sensing.md) | 触れた・キー・マウス・タイマー |
+| [演算](operators.md) | 四則・比較・論理・文字列・乱数 |
+| [変数](variables.md) | 1 つの値を覚える |
+| [リスト](list.md) | 並んだ値を覚える |
+
+一覧を組み立て直して差分が無いことを確かめるには、リポジトリの根で次を実行する。
+
+```zsh
+node src/cli.ts knowledge --check
+```
+
+
+## 覆わない範囲
+
+ここに挙げたものは解説が扱わない。0 件を装わず、群ごとに件数と一覧を残す。
+
+<!-- 台帳から生成: ここから -->
+### core の外のカテゴリ（106 件）
+
+- `boost`: 12 件
+- `ev3`: 11 件
+- `faceSensing`: 9 件
+- `gdxfor`: 9 件
+- `grey`: 2 件
+- `makeymakey`: 2 件
+- `microbit`: 10 件
+- `music`: 7 件
+- `obsolete`: 10 件
+- `pen`: 13 件
+- `translate`: 2 件
+- `tts`: 3 件
+- `video`: 4 件
+- `wedo`: 12 件
+
+### ドロップダウンの選択肢（3 件）
+
+- `SENSING_OF_COSTUMENUMBER` — ブロックでなく sensing_of のドロップダウンの選択肢
+- `SENSING_OF_BACKDROPNAME` — ブロックでなく sensing_of のドロップダウンの選択肢
+- `SENSING_OF_BACKDROPNUMBER` — ブロックでなく sensing_of のドロップダウンの選択肢
+
+### ブロックでない記法（2 件）
+
+- `CONTROL_ELSE` — ブロックでなく記法の部品。C 型ブロックの中身を 2 つに割る綴りで、解析の時点で「もし〜なら」へ吸収され、独立したブロックとしては現れない
+- `scratchblocks:end` — ブロックでなく記法の部品。C 型ブロックの終わりを示す綴りで、解析の時点で閉じ役として消費される
+
+### Scratch 2 の記法（3 件）
+
+- `go to front` — Scratch 2 の記法。3.0 では looks_gotofrontback が前面と背面を選択肢で兼ねる
+- `go back %1 layers` — Scratch 2 の記法。3.0 では looks_goforwardbackwardlayers が前後を選択肢で兼ねる
+- `set tempo to %1 bpm` — Scratch 2 の記法。3.0 ではテンポは音楽の拡張機能へ移った
+
+### 引数名を取れないブロック（2 件）
+
+- `EVENT_WHENBACKDROPSWITCHESTO`
+- `SENSING_OF`
+
+### 選択肢を補足で埋めた入力（3 件）
+
+- `LOOKS_SWITCHBACKDROPTO` の入力 `BACKDROP`
+- `LOOKS_SWITCHBACKDROPTOANDWAIT` の入力 `BACKDROP`
+- `CONTROL_STOP` の入力 `STOP_OPTION`
+
+### 影ブロックを規則で補った入力（24 件）
+
+- `MOTION_GOTOXY` の入力 `X`（影は `math_number`）
+- `MOTION_GOTOXY` の入力 `Y`（影は `math_number`）
+- `MOTION_GLIDESECSTOXY` の入力 `X`（影は `math_number`）
+- `MOTION_GLIDESECSTOXY` の入力 `Y`（影は `math_number`）
+- `MOTION_SETX` の入力 `X`（影は `math_number`）
+- `MOTION_SETY` の入力 `Y`（影は `math_number`）
+- `LOOKS_SAYFORSECS` の入力 `MESSAGE`（影は `text`）
+- `LOOKS_SAYFORSECS` の入力 `SECS`（影は `math_number`）
+- `LOOKS_SAY` の入力 `MESSAGE`（影は `text`）
+- `LOOKS_THINKFORSECS` の入力 `MESSAGE`（影は `text`）
+- `LOOKS_THINKFORSECS` の入力 `SECS`（影は `math_number`）
+- `LOOKS_THINK` の入力 `MESSAGE`（影は `text`）
+- `SENSING_ASKANDWAIT` の入力 `QUESTION`（影は `text`）
+- `DATA_SETVARIABLETO` の入力 `VALUE`（影は `text`）
+- `DATA_CHANGEVARIABLEBY` の入力 `VALUE`（影は `math_number`）
+- `DATA_ADDTOLIST` の入力 `ITEM`（影は `text`）
+- `DATA_DELETEOFLIST` の入力 `INDEX`（影は `math_number`）
+- `DATA_INSERTATLIST` の入力 `ITEM`（影は `text`）
+- `DATA_INSERTATLIST` の入力 `INDEX`（影は `math_number`）
+- `DATA_REPLACEITEMOFLIST` の入力 `INDEX`（影は `math_number`）
+- `DATA_REPLACEITEMOFLIST` の入力 `ITEM`（影は `text`）
+- `DATA_ITEMOFLIST` の入力 `INDEX`（影は `math_number`）
+- `DATA_ITEMNUMOFLIST` の入力 `ITEM`（影は `text`）
+- `DATA_LISTCONTAINSITEM` の入力 `ITEM`（影は `text`）
+
+### 台帳から到達しない opcode（34 件）
+
+- `control_all_at_once`
+- `control_clear_counter`
+- `control_create_clone_of_menu`
+- `control_for_each`
+- `control_get_counter`
+- `control_incr_counter`
+- `control_while`
+- `data_listcontents`
+- `data_listindexall`
+- `data_listindexrandom`
+- `data_variable`
+- `event_broadcast_menu`
+- `event_touchingobjectmenu`
+- `event_whentouchingobject`
+- `looks_backdrops`
+- `looks_changestretchby`
+- `looks_costume`
+- `looks_hideallsprites`
+- `looks_setstretchto`
+- `motion_align_scene`
+- `motion_glideto_menu`
+- `motion_goto_menu`
+- `motion_pointtowards_menu`
+- `motion_scroll_right`
+- `motion_scroll_up`
+- `motion_xscroll`
+- `motion_yscroll`
+- `sensing_distancetomenu`
+- `sensing_keyoptions`
+- `sensing_loud`
+- `sensing_of_object_menu`
+- `sensing_touchingobjectmenu`
+- `sensing_userid`
+- `sound_sounds_menu`
+
+### 日本語の綴りが衝突して記法から呼べないブロック（5 件）
+
+同じ日本語ラベルを持つ組が 6 組ある。記法からは一方しか呼べない。
+どちらが呼ばれるかは実際に解析器へ通して確かめたものである。
+
+| 綴り | 記法から呼べる | 呼べない |
+|---|---|---|
+| `%1 の効果を %2 ずつ変える` | `LOOKS_CHANGEEFFECTBY` | `SOUND_CHANGEEFFECTBY` |
+| `%1 の効果を %2 にする` | `LOOKS_SETEFFECTTO` | `SOUND_SETEFFECTO` |
+| `音量` | `SOUND_VOLUME` | `SENSING_LOUDNESS` |
+| `%2 の %1` | `SENSING_OF` | `OPERATORS_MATHOP` |
+| `%1 の長さ` | `OPERATORS_LENGTH` | `DATA_LENGTHOFLIST` |
+| `%1 に %2 が含まれる` | `OPERATORS_CONTAINS` / `DATA_LISTCONTAINSITEM` | （無し） |
+<!-- 台帳から生成: ここまで -->
+
+__END__

@@ -1,0 +1,3861 @@
+{
+  "生成元": {
+    "scratchblocks": "3.7.1",
+    "scratch-blocks": "2.1.19",
+    "手書きの表": "23162939d224"
+  },
+  "表の出典": [
+    {
+      "表": "MENU_OPTIONS",
+      "種別": "旧版",
+      "出典": "scratch-blocks の blocks_vertical",
+      "版": "0.1.0-prerelease.20221207082607",
+      "理由": "現行はメニューの定義が空で、中身を scratch-gui が実行時に埋めるため内部値を取れない。日本語ラベルだけは現行から引ける"
+    },
+    {
+      "表": "SHADOWS",
+      "種別": "旧版",
+      "出典": "scratch-blocks の blocks_vertical/default_toolbox.js",
+      "版": "0.1.0-prerelease.20221207082607",
+      "理由": "現行はツールボックスの定義を持たない（製品版は scratch-gui 側にある）。定義を持っていた最後の系列から取っている"
+    },
+    {
+      "表": "PRIMITIVES",
+      "種別": "別出典",
+      "出典": "scratch-vm の src/serialization/sb3.js",
+      "版": "5.0.300",
+      "理由": "scratch-vm は 24MB あり、この 12 行のために依存へ加えない"
+    },
+    {
+      "表": "SUPPLEMENT",
+      "種別": "手書き",
+      "出典": "各項目のコメント",
+      "版": null,
+      "理由": "機械で書き出せなかったぶんの補足。項目ごとに出典を持つ"
+    },
+    {
+      "表": "NAME_KINDS",
+      "種別": "手書き",
+      "出典": "記法と .sb3 の突き合わせ",
+      "版": null,
+      "理由": "作品ごとに名前が決まる種別の一覧。表で引く対象ではない"
+    },
+    {
+      "表": "FALLBACK",
+      "種別": "手書き",
+      "出典": "記法の引数の種別",
+      "版": null,
+      "理由": "表に無い入力へ影を補う規則。上流に対応物が無い"
+    },
+    {
+      "表": "EXCEPTIONS",
+      "種別": "手書き",
+      "出典": "各項目の理由",
+      "版": null,
+      "理由": "機械で導けないものだけを置く、台帳の唯一の手書きの生成元"
+    }
+  ],
+  "件数": {
+    "台帳": 119,
+    "opcode を例外表から得た": 3,
+    "引数名を取れない": 2
+  },
+  "ブロック": [
+    {
+      "identifier": "MOTION_MOVESTEPS",
+      "opcode": "motion_movesteps",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "move %1 steps",
+      "ja": "%1 歩動かす",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "STEPS",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_TURNRIGHT",
+      "opcode": "motion_turnright",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "turn @turnRight %1 degrees",
+      "ja": "@turnRight %1 度回す",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "DEGREES",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_TURNLEFT",
+      "opcode": "motion_turnleft",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "turn @turnLeft %1 degrees",
+      "ja": "@turnLeft %1 度回す",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "DEGREES",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_POINTINDIRECTION",
+      "opcode": "motion_pointindirection",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "point in direction %1",
+      "ja": "%1 度に向ける",
+      "inputs": [
+        "%d.direction"
+      ],
+      "args": [
+        {
+          "name": "DIRECTION",
+          "kind": "input",
+          "notation": "%d.direction",
+          "shadow": "math_angle",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_POINTTOWARDS",
+      "opcode": "motion_pointtowards",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "point towards %1",
+      "ja": "%1 へ向ける",
+      "inputs": [
+        "%m.spriteOrMouse"
+      ],
+      "args": [
+        {
+          "name": "TOWARDS",
+          "kind": "input",
+          "notation": "%m.spriteOrMouse",
+          "shadow": "motion_pointtowards_menu",
+          "shadowFrom": "表",
+          "options": {
+            "マウスのポインター": "_mouse_",
+            "どれかの向き": "_random_"
+          },
+          "optionsFrom": "メニューの定義と名前の併用",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_GOTOXY",
+      "opcode": "motion_gotoxy",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "go to x:%1 y:%2",
+      "ja": "x座標を %1 、y座標を %2 にする",
+      "inputs": [
+        "%n",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "X",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "Y",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_GOTO",
+      "opcode": "motion_goto",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "go to %1",
+      "ja": "%1 へ行く",
+      "inputs": [
+        "%m.location"
+      ],
+      "args": [
+        {
+          "name": "TO",
+          "kind": "input",
+          "notation": "%m.location",
+          "shadow": "motion_goto_menu",
+          "shadowFrom": "表",
+          "options": {
+            "マウスのポインター": "_mouse_",
+            "どこかの場所": "_random_"
+          },
+          "optionsFrom": "メニューの定義と名前の併用",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_GLIDESECSTOXY",
+      "opcode": "motion_glidesecstoxy",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "glide %1 secs to x:%2 y:%3",
+      "ja": "%1 秒でx座標を %2 に、y座標を %3 に変える",
+      "inputs": [
+        "%n",
+        "%n",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "SECS",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "X",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "Y",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_GLIDETO",
+      "opcode": "motion_glideto",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "glide %1 secs to %2",
+      "ja": "%1 秒で %2 へ行く",
+      "inputs": [
+        "%n",
+        "%m.location"
+      ],
+      "args": [
+        {
+          "name": "SECS",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "TO",
+          "kind": "input",
+          "notation": "%m.location",
+          "shadow": "motion_glideto_menu",
+          "shadowFrom": "表",
+          "options": {
+            "マウスのポインター": "_mouse_",
+            "どこかの場所": "_random_"
+          },
+          "optionsFrom": "メニューの定義と名前の併用",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_CHANGEXBY",
+      "opcode": "motion_changexby",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "change x by %1",
+      "ja": "x座標を %1 ずつ変える",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "DX",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_SETX",
+      "opcode": "motion_setx",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "set x to %1",
+      "ja": "x座標を %1 にする",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "X",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_CHANGEYBY",
+      "opcode": "motion_changeyby",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "change y by %1",
+      "ja": "y座標を %1 ずつ変える",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "DY",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_SETY",
+      "opcode": "motion_sety",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "set y to %1",
+      "ja": "y座標を %1 にする",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "Y",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_SETROTATIONSTYLE",
+      "opcode": "motion_setrotationstyle",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "set rotation style %1",
+      "ja": "回転方法を %1 にする",
+      "inputs": [
+        "%m.rotationStyle"
+      ],
+      "args": [
+        {
+          "name": "STYLE",
+          "kind": "field",
+          "notation": "%m.rotationStyle",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "左右のみ": "left-right",
+            "回転しない": "don't rotate",
+            "自由に回転": "all around"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_SAYFORSECS",
+      "opcode": "looks_sayforsecs",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "say %1 for %2 seconds",
+      "ja": "%1 と %2 秒言う",
+      "inputs": [
+        "%s",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "MESSAGE",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "SECS",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_SAY",
+      "opcode": "looks_say",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "say %1",
+      "ja": "%1 と言う",
+      "inputs": [
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "MESSAGE",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_THINKFORSECS",
+      "opcode": "looks_thinkforsecs",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "think %1 for %2 seconds",
+      "ja": "%1 と %2 秒考える",
+      "inputs": [
+        "%s",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "MESSAGE",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "SECS",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_THINK",
+      "opcode": "looks_think",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "think %1",
+      "ja": "%1 と考える",
+      "inputs": [
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "MESSAGE",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_SHOW",
+      "opcode": "looks_show",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "show",
+      "ja": "表示する",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_HIDE",
+      "opcode": "looks_hide",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "hide",
+      "ja": "隠す",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_SWITCHCOSTUMETO",
+      "opcode": "looks_switchcostumeto",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "switch costume to %1",
+      "ja": "コスチュームを %1 にする",
+      "inputs": [
+        "%m.costume"
+      ],
+      "args": [
+        {
+          "name": "COSTUME",
+          "kind": "input",
+          "notation": "%m.costume",
+          "shadow": "looks_costume",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_NEXTCOSTUME",
+      "opcode": "looks_nextcostume",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "next costume",
+      "ja": "次のコスチュームにする",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_NEXTBACKDROP_BLOCK",
+      "opcode": "looks_nextbackdrop",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "next backdrop",
+      "ja": "次の背景にする",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_SWITCHBACKDROPTO",
+      "opcode": "looks_switchbackdropto",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "switch backdrop to %1",
+      "ja": "背景を %1 にする",
+      "inputs": [
+        "%m.backdrop"
+      ],
+      "args": [
+        {
+          "name": "BACKDROP",
+          "kind": "input",
+          "notation": "%m.backdrop",
+          "shadow": "looks_backdrops",
+          "shadowFrom": "表",
+          "options": {
+            "次の背景": "next backdrop",
+            "前の背景": "previous backdrop",
+            "どれかの背景": "random backdrop"
+          },
+          "optionsFrom": "補足と名前の併用",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_SWITCHBACKDROPTOANDWAIT",
+      "opcode": "looks_switchbackdroptoandwait",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "switch backdrop to %1 and wait",
+      "ja": "背景を %1 にして待つ",
+      "inputs": [
+        "%m.backdrop"
+      ],
+      "args": [
+        {
+          "name": "BACKDROP",
+          "kind": "input",
+          "notation": "%m.backdrop",
+          "shadow": "looks_backdrops",
+          "shadowFrom": "表",
+          "options": {
+            "次の背景": "next backdrop",
+            "前の背景": "previous backdrop",
+            "どれかの背景": "random backdrop"
+          },
+          "optionsFrom": "補足と名前の併用",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_CHANGEEFFECTBY",
+      "opcode": "looks_changeeffectby",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "change %1 effect by %2",
+      "ja": "%1 の効果を %2 ずつ変える",
+      "inputs": [
+        "%m.effect",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "EFFECT",
+          "kind": "field",
+          "notation": "%m.effect",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "色": "COLOR",
+            "魚眼レンズ": "FISHEYE",
+            "渦巻き": "WHIRL",
+            "ピクセル化": "PIXELATE",
+            "モザイク": "MOSAIC",
+            "明るさ": "BRIGHTNESS",
+            "幽霊": "GHOST"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        },
+        {
+          "name": "CHANGE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_SETEFFECTTO",
+      "opcode": "looks_seteffectto",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "set %1 effect to %2",
+      "ja": "%1 の効果を %2 にする",
+      "inputs": [
+        "%m.effect",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "EFFECT",
+          "kind": "field",
+          "notation": "%m.effect",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "色": "COLOR",
+            "魚眼レンズ": "FISHEYE",
+            "渦巻き": "WHIRL",
+            "ピクセル化": "PIXELATE",
+            "モザイク": "MOSAIC",
+            "明るさ": "BRIGHTNESS",
+            "幽霊": "GHOST"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        },
+        {
+          "name": "VALUE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_CLEARGRAPHICEFFECTS",
+      "opcode": "looks_cleargraphiceffects",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "clear graphic effects",
+      "ja": "画像効果をなくす",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_CHANGESIZEBY",
+      "opcode": "looks_changesizeby",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "change size by %1",
+      "ja": "大きさを %1 ずつ変える",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "CHANGE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_SETSIZETO",
+      "opcode": "looks_setsizeto",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "set size to %1%",
+      "ja": "大きさを %1 %にする",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "SIZE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_GOTOFRONTBACK",
+      "opcode": "looks_gotofrontback",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "go to %1 layer",
+      "ja": "%1 へ移動する",
+      "inputs": [
+        "%m"
+      ],
+      "args": [
+        {
+          "name": "FRONT_BACK",
+          "kind": "field",
+          "notation": "%m",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "最前面": "front",
+            "最背面": "back"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_GOFORWARDBACKWARDLAYERS",
+      "opcode": "looks_goforwardbackwardlayers",
+      "category": "looks",
+      "shape": "stack",
+      "spec": "go %1 %2 layers",
+      "ja": "%2 層 %1",
+      "inputs": [
+        "%m",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "FORWARD_BACKWARD",
+          "kind": "field",
+          "notation": "%m",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "手前に出す": "forward",
+            "奥に下げる": "backward"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        },
+        {
+          "name": "NUM",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_integer",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SOUND_PLAY",
+      "opcode": "sound_play",
+      "category": "sound",
+      "shape": "stack",
+      "spec": "start sound %1",
+      "ja": "%1 の音を鳴らす",
+      "inputs": [
+        "%m.sound"
+      ],
+      "args": [
+        {
+          "name": "SOUND_MENU",
+          "kind": "input",
+          "notation": "%m.sound",
+          "shadow": "sound_sounds_menu",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SOUND_CHANGEEFFECTBY",
+      "opcode": "sound_changeeffectby",
+      "category": "sound",
+      "shape": "stack",
+      "spec": "change %1 effect by %2",
+      "ja": "%1 の効果を %2 ずつ変える",
+      "inputs": [
+        "%m",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "EFFECT",
+          "kind": "field",
+          "notation": "%m",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "ピッチ": "PITCH",
+            "左右にパン": "PAN"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        },
+        {
+          "name": "VALUE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SOUND_SETEFFECTO",
+      "opcode": "sound_seteffectto",
+      "category": "sound",
+      "shape": "stack",
+      "spec": "set %1 effect to %2",
+      "ja": "%1 の効果を %2 にする",
+      "inputs": [
+        "%m",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "EFFECT",
+          "kind": "field",
+          "notation": "%m",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "ピッチ": "PITCH",
+            "左右にパン": "PAN"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        },
+        {
+          "name": "VALUE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SOUND_CLEAREFFECTS",
+      "opcode": "sound_cleareffects",
+      "category": "sound",
+      "shape": "stack",
+      "spec": "clear sound effects",
+      "ja": "音の効果をなくす",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SOUND_PLAYUNTILDONE",
+      "opcode": "sound_playuntildone",
+      "category": "sound",
+      "shape": "stack",
+      "spec": "play sound %1 until done",
+      "ja": "終わるまで %1 の音を鳴らす",
+      "inputs": [
+        "%m.sound"
+      ],
+      "args": [
+        {
+          "name": "SOUND_MENU",
+          "kind": "input",
+          "notation": "%m.sound",
+          "shadow": "sound_sounds_menu",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SOUND_STOPALLSOUNDS",
+      "opcode": "sound_stopallsounds",
+      "category": "sound",
+      "shape": "stack",
+      "spec": "stop all sounds",
+      "ja": "すべての音を止める",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SOUND_CHANGEVOLUMEBY",
+      "opcode": "sound_changevolumeby",
+      "category": "sound",
+      "shape": "stack",
+      "spec": "change volume by %1",
+      "ja": "音量を %1 ずつ変える",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "VOLUME",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SOUND_SETVOLUMETO",
+      "opcode": "sound_setvolumeto",
+      "category": "sound",
+      "shape": "stack",
+      "spec": "set volume to %1%",
+      "ja": "音量を %1 %にする",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "VOLUME",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "EVENT_WHENFLAGCLICKED",
+      "opcode": "event_whenflagclicked",
+      "category": "events",
+      "shape": "hat",
+      "spec": "when @greenFlag clicked",
+      "ja": "@greenFlag が押されたとき",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "EVENT_WHENKEYPRESSED",
+      "opcode": "event_whenkeypressed",
+      "category": "events",
+      "shape": "hat",
+      "spec": "when %1 key pressed",
+      "ja": "%1 キーが押されたとき",
+      "inputs": [
+        "%m.key"
+      ],
+      "args": [
+        {
+          "name": "KEY_OPTION",
+          "kind": "field",
+          "notation": "%m.key",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "0": "0",
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+            "スペース": "space",
+            "上向き矢印": "up arrow",
+            "下向き矢印": "down arrow",
+            "右向き矢印": "right arrow",
+            "左向き矢印": "left arrow",
+            "どれかの": "any",
+            "a": "a",
+            "b": "b",
+            "c": "c",
+            "d": "d",
+            "e": "e",
+            "f": "f",
+            "g": "g",
+            "h": "h",
+            "i": "i",
+            "j": "j",
+            "k": "k",
+            "l": "l",
+            "m": "m",
+            "n": "n",
+            "o": "o",
+            "p": "p",
+            "q": "q",
+            "r": "r",
+            "s": "s",
+            "t": "t",
+            "u": "u",
+            "v": "v",
+            "w": "w",
+            "x": "x",
+            "y": "y",
+            "z": "z"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "EVENT_WHENTHISSPRITECLICKED",
+      "opcode": "event_whenthisspriteclicked",
+      "category": "events",
+      "shape": "hat",
+      "spec": "when this sprite clicked",
+      "ja": "このスプライトが押されたとき",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "EVENT_WHENSTAGECLICKED",
+      "opcode": "event_whenstageclicked",
+      "category": "events",
+      "shape": "hat",
+      "spec": "when stage clicked",
+      "ja": "ステージが押されたとき",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "EVENT_WHENBACKDROPSWITCHESTO",
+      "opcode": "event_whenbackdropswitchesto",
+      "category": "events",
+      "shape": "hat",
+      "spec": "when backdrop switches to %1",
+      "ja": "背景が %1 になったとき",
+      "inputs": [
+        "%m.backdrop"
+      ],
+      "args": null,
+      "alsoCovers": [],
+      "opcodeFrom": "例外表"
+    },
+    {
+      "identifier": "EVENT_WHENGREATERTHAN",
+      "opcode": "event_whengreaterthan",
+      "category": "events",
+      "shape": "hat",
+      "spec": "when %1 > %2",
+      "ja": "%1 > %2 のとき",
+      "inputs": [
+        "%m.triggerSensor",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "WHENGREATERTHANMENU",
+          "kind": "field",
+          "notation": "%m.triggerSensor",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "音量": "LOUDNESS",
+            "タイマー": "TIMER"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        },
+        {
+          "name": "VALUE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "EVENT_WHENBROADCASTRECEIVED",
+      "opcode": "event_whenbroadcastreceived",
+      "category": "events",
+      "shape": "hat",
+      "spec": "when I receive %1",
+      "ja": "%1 を受け取ったとき",
+      "inputs": [
+        "%m.broadcast"
+      ],
+      "args": [
+        {
+          "name": "BROADCAST_OPTION",
+          "kind": "field",
+          "notation": "%m.broadcast",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "EVENT_BROADCAST",
+      "opcode": "event_broadcast",
+      "category": "events",
+      "shape": "stack",
+      "spec": "broadcast %1",
+      "ja": "%1 を送る",
+      "inputs": [
+        "%m.broadcast"
+      ],
+      "args": [
+        {
+          "name": "BROADCAST_INPUT",
+          "kind": "input",
+          "notation": "%m.broadcast",
+          "shadow": "event_broadcast_menu",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "EVENT_BROADCASTANDWAIT",
+      "opcode": "event_broadcastandwait",
+      "category": "events",
+      "shape": "stack",
+      "spec": "broadcast %1 and wait",
+      "ja": "%1 を送って待つ",
+      "inputs": [
+        "%m.broadcast"
+      ],
+      "args": [
+        {
+          "name": "BROADCAST_INPUT",
+          "kind": "input",
+          "notation": "%m.broadcast",
+          "shadow": "event_broadcast_menu",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "CONTROL_WAIT",
+      "opcode": "control_wait",
+      "category": "control",
+      "shape": "stack",
+      "spec": "wait %1 seconds",
+      "ja": "%1 秒待つ",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "DURATION",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_positive_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "CONTROL_REPEAT",
+      "opcode": "control_repeat",
+      "category": "control",
+      "shape": "c-block",
+      "spec": "repeat %1",
+      "ja": "%1 回繰り返す",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "TIMES",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_whole_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "SUBSTACK",
+          "kind": "statement",
+          "notation": null,
+          "shadow": null
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "CONTROL_FOREVER",
+      "opcode": "control_forever",
+      "category": "control",
+      "shape": "c-block cap",
+      "spec": "forever",
+      "ja": "ずっと",
+      "inputs": [],
+      "args": [
+        {
+          "name": "SUBSTACK",
+          "kind": "statement",
+          "notation": null,
+          "shadow": null
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "CONTROL_IF",
+      "opcode": "control_if",
+      "category": "control",
+      "shape": "c-block",
+      "spec": "if %1 then",
+      "ja": "もし %1 なら",
+      "inputs": [
+        "%b"
+      ],
+      "args": [
+        {
+          "name": "CONDITION",
+          "kind": "input",
+          "notation": "%b",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "SUBSTACK",
+          "kind": "statement",
+          "notation": null,
+          "shadow": null
+        }
+      ],
+      "alsoCovers": [
+        {
+          "opcode": "control_if_else",
+          "args": [
+            {
+              "name": "CONDITION",
+              "kind": "input",
+              "notation": "%b",
+              "shadow": null,
+              "shadowFrom": null,
+              "options": null,
+              "optionsFrom": null,
+              "namesAllowed": false
+            },
+            {
+              "name": "SUBSTACK",
+              "kind": "statement",
+              "notation": null,
+              "shadow": null
+            },
+            {
+              "name": "SUBSTACK2",
+              "kind": "statement",
+              "notation": null,
+              "shadow": null
+            }
+          ]
+        }
+      ],
+      "opcodeFrom": "例外表"
+    },
+    {
+      "identifier": "CONTROL_WAITUNTIL",
+      "opcode": "control_wait_until",
+      "category": "control",
+      "shape": "stack",
+      "spec": "wait until %1",
+      "ja": "%1 まで待つ",
+      "inputs": [
+        "%b"
+      ],
+      "args": [
+        {
+          "name": "CONDITION",
+          "kind": "input",
+          "notation": "%b",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "CONTROL_REPEATUNTIL",
+      "opcode": "control_repeat_until",
+      "category": "control",
+      "shape": "c-block",
+      "spec": "repeat until %1",
+      "ja": "%1 まで繰り返す",
+      "inputs": [
+        "%b"
+      ],
+      "args": [
+        {
+          "name": "CONDITION",
+          "kind": "input",
+          "notation": "%b",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "SUBSTACK",
+          "kind": "statement",
+          "notation": null,
+          "shadow": null
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "CONTROL_STOP",
+      "opcode": "control_stop",
+      "category": "control",
+      "shape": "cap",
+      "spec": "stop %1",
+      "ja": " %1",
+      "inputs": [
+        "%m.stop"
+      ],
+      "args": [
+        {
+          "name": "STOP_OPTION",
+          "kind": "field",
+          "notation": "%m.stop",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "すべてを止める": "all",
+            "このスクリプトを止める": "this script",
+            "スプライトの他のスクリプトを止める": "other scripts in sprite"
+          },
+          "optionsFrom": "補足",
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "CONTROL_STARTASCLONE",
+      "opcode": "control_start_as_clone",
+      "category": "control",
+      "shape": "hat",
+      "spec": "when I start as a clone",
+      "ja": "クローンされたとき",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "CONTROL_CREATECLONEOF",
+      "opcode": "control_create_clone_of",
+      "category": "control",
+      "shape": "stack",
+      "spec": "create clone of %1",
+      "ja": "%1 のクローンを作る",
+      "inputs": [
+        "%m.spriteOnly"
+      ],
+      "args": [
+        {
+          "name": "CLONE_OPTION",
+          "kind": "input",
+          "notation": "%m.spriteOnly",
+          "shadow": "control_create_clone_of_menu",
+          "shadowFrom": "表",
+          "options": {
+            "自分自身": "_myself_"
+          },
+          "optionsFrom": "メニューの定義と名前の併用",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "CONTROL_DELETETHISCLONE",
+      "opcode": "control_delete_this_clone",
+      "category": "control",
+      "shape": "cap",
+      "spec": "delete this clone",
+      "ja": "このクローンを削除する",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_ASKANDWAIT",
+      "opcode": "sensing_askandwait",
+      "category": "sensing",
+      "shape": "stack",
+      "spec": "ask %1 and wait",
+      "ja": "%1 と聞いて待つ",
+      "inputs": [
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "QUESTION",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_RESETTIMER",
+      "opcode": "sensing_resettimer",
+      "category": "sensing",
+      "shape": "stack",
+      "spec": "reset timer",
+      "ja": "タイマーをリセット",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_SETVARIABLETO",
+      "opcode": "data_setvariableto",
+      "category": "variables",
+      "shape": "stack",
+      "spec": "set %1 to %2",
+      "ja": "%1 を %2 にする",
+      "inputs": [
+        "%m.var",
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "VARIABLE",
+          "kind": "field",
+          "notation": "%m.var",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        },
+        {
+          "name": "VALUE",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_CHANGEVARIABLEBY",
+      "opcode": "data_changevariableby",
+      "category": "variables",
+      "shape": "stack",
+      "spec": "change %1 by %2",
+      "ja": "%1 を %2 ずつ変える",
+      "inputs": [
+        "%m.var",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "VARIABLE",
+          "kind": "field",
+          "notation": "%m.var",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        },
+        {
+          "name": "VALUE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_SHOWVARIABLE",
+      "opcode": "data_showvariable",
+      "category": "variables",
+      "shape": "stack",
+      "spec": "show variable %1",
+      "ja": "変数 %1 を表示する",
+      "inputs": [
+        "%m.var"
+      ],
+      "args": [
+        {
+          "name": "VARIABLE",
+          "kind": "field",
+          "notation": "%m.var",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_HIDEVARIABLE",
+      "opcode": "data_hidevariable",
+      "category": "variables",
+      "shape": "stack",
+      "spec": "hide variable %1",
+      "ja": "変数 %1 を隠す",
+      "inputs": [
+        "%m.var"
+      ],
+      "args": [
+        {
+          "name": "VARIABLE",
+          "kind": "field",
+          "notation": "%m.var",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_ADDTOLIST",
+      "opcode": "data_addtolist",
+      "category": "list",
+      "shape": "stack",
+      "spec": "add %1 to %2",
+      "ja": "%1 を %2 に追加する",
+      "inputs": [
+        "%s",
+        "%m.list"
+      ],
+      "args": [
+        {
+          "name": "ITEM",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "LIST",
+          "kind": "field",
+          "notation": "%m.list",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_DELETEOFLIST",
+      "opcode": "data_deleteoflist",
+      "category": "list",
+      "shape": "stack",
+      "spec": "delete %1 of %2",
+      "ja": "%2 の %1 番目を削除する",
+      "inputs": [
+        "%d.listDeleteItem",
+        "%m.list"
+      ],
+      "args": [
+        {
+          "name": "INDEX",
+          "kind": "input",
+          "notation": "%d.listDeleteItem",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "LIST",
+          "kind": "field",
+          "notation": "%m.list",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_DELETEALLOFLIST",
+      "opcode": "data_deletealloflist",
+      "category": "list",
+      "shape": "stack",
+      "spec": "delete all of %1",
+      "ja": "%1のすべてを削除する",
+      "inputs": [
+        "%m.list"
+      ],
+      "args": [
+        {
+          "name": "LIST",
+          "kind": "field",
+          "notation": "%m.list",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_IFONEDGEBOUNCE",
+      "opcode": "motion_ifonedgebounce",
+      "category": "motion",
+      "shape": "stack",
+      "spec": "if on edge, bounce",
+      "ja": "もし端に着いたら、跳ね返る",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_INSERTATLIST",
+      "opcode": "data_insertatlist",
+      "category": "list",
+      "shape": "stack",
+      "spec": "insert %1 at %2 of %3",
+      "ja": "%3 の %2 番目に %1 を挿入する",
+      "inputs": [
+        "%s",
+        "%d.listItem",
+        "%m.list"
+      ],
+      "args": [
+        {
+          "name": "ITEM",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "INDEX",
+          "kind": "input",
+          "notation": "%d.listItem",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "LIST",
+          "kind": "field",
+          "notation": "%m.list",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_REPLACEITEMOFLIST",
+      "opcode": "data_replaceitemoflist",
+      "category": "list",
+      "shape": "stack",
+      "spec": "replace item %1 of %2 with %3",
+      "ja": "%2 の %1 番目を %3 で置き換える",
+      "inputs": [
+        "%d.listItem",
+        "%m.list",
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "INDEX",
+          "kind": "input",
+          "notation": "%d.listItem",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "LIST",
+          "kind": "field",
+          "notation": "%m.list",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        },
+        {
+          "name": "ITEM",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_SHOWLIST",
+      "opcode": "data_showlist",
+      "category": "list",
+      "shape": "stack",
+      "spec": "show list %1",
+      "ja": "リスト %1 を表示する",
+      "inputs": [
+        "%m.list"
+      ],
+      "args": [
+        {
+          "name": "LIST",
+          "kind": "field",
+          "notation": "%m.list",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_HIDELIST",
+      "opcode": "data_hidelist",
+      "category": "list",
+      "shape": "stack",
+      "spec": "hide list %1",
+      "ja": "リスト %1 を隠す",
+      "inputs": [
+        "%m.list"
+      ],
+      "args": [
+        {
+          "name": "LIST",
+          "kind": "field",
+          "notation": "%m.list",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_XPOSITION",
+      "opcode": "motion_xposition",
+      "category": "motion",
+      "shape": "reporter",
+      "spec": "x position",
+      "ja": "x座標",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_YPOSITION",
+      "opcode": "motion_yposition",
+      "category": "motion",
+      "shape": "reporter",
+      "spec": "y position",
+      "ja": "y座標",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "MOTION_DIRECTION",
+      "opcode": "motion_direction",
+      "category": "motion",
+      "shape": "reporter",
+      "spec": "direction",
+      "ja": "向き",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_COSTUMENUMBERNAME",
+      "opcode": "looks_costumenumbername",
+      "category": "looks",
+      "shape": "reporter",
+      "spec": "costume %1",
+      "ja": "コスチュームの %1",
+      "inputs": [
+        "%m"
+      ],
+      "args": [
+        {
+          "name": "NUMBER_NAME",
+          "kind": "field",
+          "notation": "%m",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "番号": "number",
+            "名前": "name"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_SIZE",
+      "opcode": "looks_size",
+      "category": "looks",
+      "shape": "reporter",
+      "spec": "size",
+      "ja": "大きさ",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "LOOKS_BACKDROPNUMBERNAME",
+      "opcode": "looks_backdropnumbername",
+      "category": "looks",
+      "shape": "reporter",
+      "spec": "backdrop %1",
+      "ja": "背景の %1",
+      "inputs": [
+        "%m"
+      ],
+      "args": [
+        {
+          "name": "NUMBER_NAME",
+          "kind": "field",
+          "notation": "%m",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "番号": "number",
+            "名前": "name"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SOUND_VOLUME",
+      "opcode": "sound_volume",
+      "category": "sound",
+      "shape": "reporter",
+      "spec": "volume",
+      "ja": "音量",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_TOUCHINGOBJECT",
+      "opcode": "sensing_touchingobject",
+      "category": "sensing",
+      "shape": "boolean",
+      "spec": "touching %1?",
+      "ja": "%1 に触れた",
+      "inputs": [
+        "%m.touching"
+      ],
+      "args": [
+        {
+          "name": "TOUCHINGOBJECTMENU",
+          "kind": "input",
+          "notation": "%m.touching",
+          "shadow": "sensing_touchingobjectmenu",
+          "shadowFrom": "表",
+          "options": {
+            "マウスのポインター": "_mouse_",
+            "端": "_edge_"
+          },
+          "optionsFrom": "メニューの定義と名前の併用",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_TOUCHINGCOLOR",
+      "opcode": "sensing_touchingcolor",
+      "category": "sensing",
+      "shape": "boolean",
+      "spec": "touching color %1?",
+      "ja": "%1 色に触れた",
+      "inputs": [
+        "%c"
+      ],
+      "args": [
+        {
+          "name": "COLOR",
+          "kind": "input",
+          "notation": "%c",
+          "shadow": "colour_picker",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_COLORISTOUCHINGCOLOR",
+      "opcode": "sensing_coloristouchingcolor",
+      "category": "sensing",
+      "shape": "boolean",
+      "spec": "color %1 is touching %2?",
+      "ja": "%1 色が %2 色に触れた",
+      "inputs": [
+        "%c",
+        "%c"
+      ],
+      "args": [
+        {
+          "name": "COLOR",
+          "kind": "input",
+          "notation": "%c",
+          "shadow": "colour_picker",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "COLOR2",
+          "kind": "input",
+          "notation": "%c",
+          "shadow": "colour_picker",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_DISTANCETO",
+      "opcode": "sensing_distanceto",
+      "category": "sensing",
+      "shape": "reporter",
+      "spec": "distance to %1",
+      "ja": "%1 までの距離",
+      "inputs": [
+        "%m.spriteOrMouse"
+      ],
+      "args": [
+        {
+          "name": "DISTANCETOMENU",
+          "kind": "input",
+          "notation": "%m.spriteOrMouse",
+          "shadow": "sensing_distancetomenu",
+          "shadowFrom": "表",
+          "options": {
+            "マウスのポインター": "_mouse_"
+          },
+          "optionsFrom": "メニューの定義と名前の併用",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_ANSWER",
+      "opcode": "sensing_answer",
+      "category": "sensing",
+      "shape": "reporter",
+      "spec": "answer",
+      "ja": "答え",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_KEYPRESSED",
+      "opcode": "sensing_keypressed",
+      "category": "sensing",
+      "shape": "boolean",
+      "spec": "key %1 pressed?",
+      "ja": "%1 キーが押された",
+      "inputs": [
+        "%m.key"
+      ],
+      "args": [
+        {
+          "name": "KEY_OPTION",
+          "kind": "input",
+          "notation": "%m.key",
+          "shadow": "sensing_keyoptions",
+          "shadowFrom": "表",
+          "options": {
+            "0": "0",
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+            "スペース": "space",
+            "上向き矢印": "up arrow",
+            "下向き矢印": "down arrow",
+            "右向き矢印": "right arrow",
+            "左向き矢印": "left arrow",
+            "どれかの": "any",
+            "a": "a",
+            "b": "b",
+            "c": "c",
+            "d": "d",
+            "e": "e",
+            "f": "f",
+            "g": "g",
+            "h": "h",
+            "i": "i",
+            "j": "j",
+            "k": "k",
+            "l": "l",
+            "m": "m",
+            "n": "n",
+            "o": "o",
+            "p": "p",
+            "q": "q",
+            "r": "r",
+            "s": "s",
+            "t": "t",
+            "u": "u",
+            "v": "v",
+            "w": "w",
+            "x": "x",
+            "y": "y",
+            "z": "z"
+          },
+          "optionsFrom": "影ブロックの定義",
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_MOUSEDOWN",
+      "opcode": "sensing_mousedown",
+      "category": "sensing",
+      "shape": "boolean",
+      "spec": "mouse down?",
+      "ja": "マウスが押された",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_MOUSEX",
+      "opcode": "sensing_mousex",
+      "category": "sensing",
+      "shape": "reporter",
+      "spec": "mouse x",
+      "ja": "マウスのx座標",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_MOUSEY",
+      "opcode": "sensing_mousey",
+      "category": "sensing",
+      "shape": "reporter",
+      "spec": "mouse y",
+      "ja": "マウスのy座標",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_SETDRAGMODE",
+      "opcode": "sensing_setdragmode",
+      "category": "sensing",
+      "shape": "stack",
+      "spec": "set drag mode %1",
+      "ja": "ドラッグ %1 ようにする",
+      "inputs": [
+        "%m"
+      ],
+      "args": [
+        {
+          "name": "DRAG_MODE",
+          "kind": "field",
+          "notation": "%m",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "できる": "draggable",
+            "できない": "not draggable"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_LOUDNESS",
+      "opcode": "sensing_loudness",
+      "category": "sensing",
+      "shape": "reporter",
+      "spec": "loudness",
+      "ja": "音量",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_TIMER",
+      "opcode": "sensing_timer",
+      "category": "sensing",
+      "shape": "reporter",
+      "spec": "timer",
+      "ja": "タイマー",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_OF",
+      "opcode": "sensing_of",
+      "category": "sensing",
+      "shape": "reporter",
+      "spec": "%1 of %2",
+      "ja": "%2 の %1",
+      "inputs": [
+        "%m.attribute",
+        "%m.spriteOrStage"
+      ],
+      "args": null,
+      "alsoCovers": [],
+      "opcodeFrom": "例外表"
+    },
+    {
+      "identifier": "SENSING_CURRENT",
+      "opcode": "sensing_current",
+      "category": "sensing",
+      "shape": "reporter",
+      "spec": "current %1",
+      "ja": "現在の %1",
+      "inputs": [
+        "%m.timeAndDate"
+      ],
+      "args": [
+        {
+          "name": "CURRENTMENU",
+          "kind": "field",
+          "notation": "%m.timeAndDate",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "年": "YEAR",
+            "月": "MONTH",
+            "日": "DATE",
+            "曜日": "DAYOFWEEK",
+            "時": "HOUR",
+            "分": "MINUTE",
+            "秒": "SECOND"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_DAYSSINCE2000",
+      "opcode": "sensing_dayssince2000",
+      "category": "sensing",
+      "shape": "reporter",
+      "spec": "days since 2000",
+      "ja": "2000年からの日数",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_ONLINE",
+      "opcode": "sensing_online",
+      "category": "sensing",
+      "shape": "boolean",
+      "spec": "online?",
+      "ja": "はオンラインか?",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "SENSING_USERNAME",
+      "opcode": "sensing_username",
+      "category": "sensing",
+      "shape": "reporter",
+      "spec": "username",
+      "ja": "ユーザー名",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_ADD",
+      "opcode": "operator_add",
+      "category": "operators",
+      "shape": "reporter",
+      "spec": "%1 + %2",
+      "ja": "%1 + %2",
+      "inputs": [
+        "%n",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "NUM1",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "NUM2",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_SUBTRACT",
+      "opcode": "operator_subtract",
+      "category": "operators",
+      "shape": "reporter",
+      "spec": "%1 - %2",
+      "ja": "%1 - %2",
+      "inputs": [
+        "%n",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "NUM1",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "NUM2",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_MULTIPLY",
+      "opcode": "operator_multiply",
+      "category": "operators",
+      "shape": "reporter",
+      "spec": "%1 * %2",
+      "ja": "%1 * %2",
+      "inputs": [
+        "%n",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "NUM1",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "NUM2",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_DIVIDE",
+      "opcode": "operator_divide",
+      "category": "operators",
+      "shape": "reporter",
+      "spec": "%1 / %2",
+      "ja": "%1 / %2",
+      "inputs": [
+        "%n",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "NUM1",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "NUM2",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_RANDOM",
+      "opcode": "operator_random",
+      "category": "operators",
+      "shape": "reporter",
+      "spec": "pick random %1 to %2",
+      "ja": "%1 から %2 までの乱数",
+      "inputs": [
+        "%n",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "FROM",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "TO",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_LT",
+      "opcode": "operator_lt",
+      "category": "operators",
+      "shape": "boolean",
+      "spec": "%1 < %2",
+      "ja": "%1 < %2",
+      "inputs": [
+        "%s",
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "OPERAND1",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "OPERAND2",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_EQUALS",
+      "opcode": "operator_equals",
+      "category": "operators",
+      "shape": "boolean",
+      "spec": "%1 = %2",
+      "ja": "%1 = %2",
+      "inputs": [
+        "%s",
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "OPERAND1",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "OPERAND2",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_GT",
+      "opcode": "operator_gt",
+      "category": "operators",
+      "shape": "boolean",
+      "spec": "%1 > %2",
+      "ja": "%1 > %2",
+      "inputs": [
+        "%s",
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "OPERAND1",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "OPERAND2",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_AND",
+      "opcode": "operator_and",
+      "category": "operators",
+      "shape": "boolean",
+      "spec": "%1 and %2",
+      "ja": "%1 かつ %2",
+      "inputs": [
+        "%b",
+        "%b"
+      ],
+      "args": [
+        {
+          "name": "OPERAND1",
+          "kind": "input",
+          "notation": "%b",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "OPERAND2",
+          "kind": "input",
+          "notation": "%b",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_OR",
+      "opcode": "operator_or",
+      "category": "operators",
+      "shape": "boolean",
+      "spec": "%1 or %2",
+      "ja": "%1 または %2",
+      "inputs": [
+        "%b",
+        "%b"
+      ],
+      "args": [
+        {
+          "name": "OPERAND1",
+          "kind": "input",
+          "notation": "%b",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "OPERAND2",
+          "kind": "input",
+          "notation": "%b",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_NOT",
+      "opcode": "operator_not",
+      "category": "operators",
+      "shape": "boolean",
+      "spec": "not %1",
+      "ja": "%1 ではない",
+      "inputs": [
+        "%b"
+      ],
+      "args": [
+        {
+          "name": "OPERAND",
+          "kind": "input",
+          "notation": "%b",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_JOIN",
+      "opcode": "operator_join",
+      "category": "operators",
+      "shape": "reporter",
+      "spec": "join %1 %2",
+      "ja": "%1 と %2",
+      "inputs": [
+        "%s",
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "STRING1",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "STRING2",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_LETTEROF",
+      "opcode": "operator_letter_of",
+      "category": "operators",
+      "shape": "reporter",
+      "spec": "letter %1 of %2",
+      "ja": "%2 の %1 番目の文字",
+      "inputs": [
+        "%n",
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "LETTER",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_whole_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "STRING",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_LENGTH",
+      "opcode": "operator_length",
+      "category": "operators",
+      "shape": "reporter",
+      "spec": "length of %1",
+      "ja": "%1 の長さ",
+      "inputs": [
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "STRING",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_MOD",
+      "opcode": "operator_mod",
+      "category": "operators",
+      "shape": "reporter",
+      "spec": "%1 mod %2",
+      "ja": "%1 を %2 で割った余り",
+      "inputs": [
+        "%n",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "NUM1",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "NUM2",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_ROUND",
+      "opcode": "operator_round",
+      "category": "operators",
+      "shape": "reporter",
+      "spec": "round %1",
+      "ja": "%1 を四捨五入",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "NUM",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_MATHOP",
+      "opcode": "operator_mathop",
+      "category": "operators",
+      "shape": "reporter",
+      "spec": "%1 of %2",
+      "ja": "%2 の %1",
+      "inputs": [
+        "%m.mathOp",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "OPERATOR",
+          "kind": "field",
+          "notation": "%m.mathOp",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": {
+            "絶対値": "abs",
+            "切り下げ": "floor",
+            "切り上げ": "ceiling",
+            "平方根": "sqrt",
+            "sin": "sin",
+            "cos": "cos",
+            "tan": "tan",
+            "asin": "asin",
+            "acos": "acos",
+            "atan": "atan",
+            "ln": "ln",
+            "log": "log",
+            "e ^": "e ^",
+            "10 ^": "10 ^"
+          },
+          "optionsFrom": "定義",
+          "namesAllowed": false
+        },
+        {
+          "name": "NUM",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "OPERATORS_CONTAINS",
+      "opcode": "operator_contains",
+      "category": "operators",
+      "shape": "boolean",
+      "spec": "%1 contains %2?",
+      "ja": "%1 に %2 が含まれる",
+      "inputs": [
+        "%s",
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "STRING1",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "STRING2",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "表",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_ITEMOFLIST",
+      "opcode": "data_itemoflist",
+      "category": "list",
+      "shape": "reporter",
+      "spec": "item %1 of %2",
+      "ja": "%2 の %1 番目",
+      "inputs": [
+        "%d.listItem",
+        "%m.list"
+      ],
+      "args": [
+        {
+          "name": "INDEX",
+          "kind": "input",
+          "notation": "%d.listItem",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "LIST",
+          "kind": "field",
+          "notation": "%m.list",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_ITEMNUMOFLIST",
+      "opcode": "data_itemnumoflist",
+      "category": "list",
+      "shape": "reporter",
+      "spec": "item # of %1 in %2",
+      "ja": "%2中の%1の場所",
+      "inputs": [
+        "%s",
+        "%m.list"
+      ],
+      "args": [
+        {
+          "name": "ITEM",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        },
+        {
+          "name": "LIST",
+          "kind": "field",
+          "notation": "%m.list",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_LENGTHOFLIST",
+      "opcode": "data_lengthoflist",
+      "category": "list",
+      "shape": "reporter",
+      "spec": "length of %1",
+      "ja": "%1 の長さ",
+      "inputs": [
+        "%m.list"
+      ],
+      "args": [
+        {
+          "name": "LIST",
+          "kind": "field",
+          "notation": "%m.list",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "DATA_LISTCONTAINSITEM",
+      "opcode": "data_listcontainsitem",
+      "category": "list",
+      "shape": "boolean",
+      "spec": "%1 contains %2?",
+      "ja": "%1 に %2 が含まれる",
+      "inputs": [
+        "%m.list",
+        "%s"
+      ],
+      "args": [
+        {
+          "name": "LIST",
+          "kind": "field",
+          "notation": "%m.list",
+          "shadow": null,
+          "shadowFrom": null,
+          "options": null,
+          "optionsFrom": "名前をそのまま使う",
+          "namesAllowed": true
+        },
+        {
+          "name": "ITEM",
+          "kind": "input",
+          "notation": "%s",
+          "shadow": "text",
+          "shadowFrom": "補い",
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    }
+  ],
+  "覆わない範囲": {
+    "core の外のカテゴリ": [
+      {
+        "category": "boost",
+        "件数": 12,
+        "識別子": [
+          "boost.motorOnFor",
+          "boost.motorOnForRotation",
+          "boost.motorOn",
+          "boost.motorOff",
+          "boost.setMotorPower",
+          "boost.setMotorDirection",
+          "boost.getMotorPosition",
+          "boost.whenColor",
+          "boost.seeingColor",
+          "boost.whenTilted",
+          "boost.getTiltAngle",
+          "boost.setLightHue"
+        ]
+      },
+      {
+        "category": "ev3",
+        "件数": 11,
+        "識別子": [
+          "ev3.motorTurnClockwise",
+          "ev3.motorTurnCounterClockwise",
+          "ev3.motorSetPower",
+          "ev3.getMotorPosition",
+          "ev3.whenButtonPressed",
+          "ev3.whenDistanceLessThan",
+          "ev3.whenBrightnessLessThan",
+          "ev3.buttonPressed",
+          "ev3.getDistance",
+          "ev3.getBrightness",
+          "ev3.beepNote"
+        ]
+      },
+      {
+        "category": "faceSensing",
+        "件数": 9,
+        "識別子": [
+          "faceSensing.goToPart",
+          "faceSensing.pointInFaceTiltDirection",
+          "faceSensing.setSizeToFaceSize",
+          "faceSensing.whenTilted",
+          "faceSensing.whenSpriteTouchesPart",
+          "faceSensing.whenFaceDetected",
+          "faceSensing.faceDetected",
+          "faceSensing.faceTilt",
+          "faceSensing.faceSize"
+        ]
+      },
+      {
+        "category": "gdxfor",
+        "件数": 9,
+        "識別子": [
+          "gdxfor.whenGesture",
+          "gdxfor.whenForcePushedOrPulled",
+          "gdxfor.getForce",
+          "gdxfor.whenTilted",
+          "gdxfor.isTilted",
+          "gdxfor.getTilt",
+          "gdxfor.isFreeFalling",
+          "gdxfor.getSpin",
+          "gdxfor.getAcceleration"
+        ]
+      },
+      {
+        "category": "grey",
+        "件数": 2,
+        "識別子": [
+          "scratchblocks:ellipsis",
+          "scratchblocks:addInput"
+        ]
+      },
+      {
+        "category": "makeymakey",
+        "件数": 2,
+        "識別子": [
+          "makeymakey.whenKeyPressed",
+          "makeymakey.whenKeysPressedInOrder"
+        ]
+      },
+      {
+        "category": "microbit",
+        "件数": 10,
+        "識別子": [
+          "microbit.whenButtonPressed",
+          "microbit.isButtonPressed",
+          "microbit.whenGesture",
+          "microbit.displaySymbol",
+          "microbit.displayText",
+          "microbit.clearDisplay",
+          "microbit.whenTilted",
+          "microbit.isTilted",
+          "microbit.tiltAngle",
+          "microbit.whenPinConnected"
+        ]
+      },
+      {
+        "category": "music",
+        "件数": 7,
+        "識別子": [
+          "music.playDrumForBeats",
+          "music.restForBeats",
+          "music.playNoteForBeats",
+          "music.setInstrument",
+          "music.changeTempo",
+          "music.setTempo",
+          "music.getTempo"
+        ]
+      },
+      {
+        "category": "obsolete",
+        "件数": 10,
+        "識別子": [
+          "SENSING_USERID",
+          "doIf",
+          "doForeverIf",
+          "doReturn",
+          "stopAll",
+          "lookLike:",
+          "nextScene",
+          "startScene",
+          "backgroundIndex",
+          "SENSING_LOUD"
+        ]
+      },
+      {
+        "category": "pen",
+        "件数": 13,
+        "識別子": [
+          "pen.clear",
+          "pen.stamp",
+          "pen.penDown",
+          "pen.penUp",
+          "pen.setColor",
+          "pen.changeHue",
+          "pen.setColorParam",
+          "pen.changeColorParam",
+          "pen.setHue",
+          "pen.changeShade",
+          "pen.setShade",
+          "pen.changeSize",
+          "pen.setSize"
+        ]
+      },
+      {
+        "category": "translate",
+        "件数": 2,
+        "識別子": [
+          "translate.translateBlock",
+          "translate.viewerLanguage"
+        ]
+      },
+      {
+        "category": "tts",
+        "件数": 3,
+        "識別子": [
+          "text2speech.speakAndWaitBlock",
+          "text2speech.setVoiceBlock",
+          "text2speech.setLanguageBlock"
+        ]
+      },
+      {
+        "category": "video",
+        "件数": 4,
+        "識別子": [
+          "videoSensing.videoToggle",
+          "videoSensing.setVideoTransparency",
+          "videoSensing.whenMotionGreaterThan",
+          "videoSensing.videoOn"
+        ]
+      },
+      {
+        "category": "wedo",
+        "件数": 12,
+        "識別子": [
+          "wedo2.motorOn",
+          "wedo2.motorOff",
+          "wedo2.startMotorPower",
+          "wedo2.setMotorDirection",
+          "wedo2.whenDistance",
+          "wedo2.getDistance",
+          "wedo2.motorOnFor",
+          "wedo2.setLightHue",
+          "wedo2.playNoteFor",
+          "wedo2.whenTilted",
+          "wedo2.isTilted",
+          "wedo2.getTiltAngle"
+        ]
+      }
+    ],
+    "ドロップダウンの選択肢": [
+      {
+        "identifier": "SENSING_OF_COSTUMENUMBER",
+        "selector": "costumeIndex",
+        "spec": "costume #",
+        "reason": "ブロックでなく sensing_of のドロップダウンの選択肢"
+      },
+      {
+        "identifier": "SENSING_OF_BACKDROPNAME",
+        "selector": "sceneName",
+        "spec": "backdrop name",
+        "reason": "ブロックでなく sensing_of のドロップダウンの選択肢"
+      },
+      {
+        "identifier": "SENSING_OF_BACKDROPNUMBER",
+        "selector": "backgroundIndex",
+        "spec": "backdrop #",
+        "reason": "ブロックでなく sensing_of のドロップダウンの選択肢"
+      }
+    ],
+    "ブロックでない記法": [
+      {
+        "identifier": "CONTROL_ELSE",
+        "selector": null,
+        "spec": "else",
+        "reason": "ブロックでなく記法の部品。C 型ブロックの中身を 2 つに割る綴りで、解析の時点で「もし〜なら」へ吸収され、独立したブロックとしては現れない"
+      },
+      {
+        "identifier": "scratchblocks:end",
+        "selector": null,
+        "spec": "end",
+        "reason": "ブロックでなく記法の部品。C 型ブロックの終わりを示す綴りで、解析の時点で閉じ役として消費される"
+      }
+    ],
+    "Scratch 2 の記法": [
+      {
+        "identifier": null,
+        "selector": "comeToFront",
+        "spec": "go to front",
+        "reason": "Scratch 2 の記法。3.0 では looks_gotofrontback が前面と背面を選択肢で兼ねる"
+      },
+      {
+        "identifier": null,
+        "selector": "goBackByLayers:",
+        "spec": "go back %1 layers",
+        "reason": "Scratch 2 の記法。3.0 では looks_goforwardbackwardlayers が前後を選択肢で兼ねる"
+      },
+      {
+        "identifier": null,
+        "selector": "setTempoTo:",
+        "spec": "set tempo to %1 bpm",
+        "reason": "Scratch 2 の記法。3.0 ではテンポは音楽の拡張機能へ移った"
+      }
+    ],
+    "引数名を取れないブロック": [
+      {
+        "identifier": "EVENT_WHENBACKDROPSWITCHESTO",
+        "opcode": "event_whenbackdropswitchesto"
+      },
+      {
+        "identifier": "SENSING_OF",
+        "opcode": "sensing_of"
+      }
+    ],
+    "選択肢を補足で埋めた入力": [
+      {
+        "identifier": "LOOKS_SWITCHBACKDROPTO",
+        "入力": "BACKDROP"
+      },
+      {
+        "identifier": "LOOKS_SWITCHBACKDROPTOANDWAIT",
+        "入力": "BACKDROP"
+      },
+      {
+        "identifier": "CONTROL_STOP",
+        "入力": "STOP_OPTION"
+      }
+    ],
+    "影ブロックを規則で補った入力": [
+      {
+        "identifier": "MOTION_GOTOXY",
+        "opcode": "motion_gotoxy",
+        "入力": "X",
+        "影": "math_number"
+      },
+      {
+        "identifier": "MOTION_GOTOXY",
+        "opcode": "motion_gotoxy",
+        "入力": "Y",
+        "影": "math_number"
+      },
+      {
+        "identifier": "MOTION_GLIDESECSTOXY",
+        "opcode": "motion_glidesecstoxy",
+        "入力": "X",
+        "影": "math_number"
+      },
+      {
+        "identifier": "MOTION_GLIDESECSTOXY",
+        "opcode": "motion_glidesecstoxy",
+        "入力": "Y",
+        "影": "math_number"
+      },
+      {
+        "identifier": "MOTION_SETX",
+        "opcode": "motion_setx",
+        "入力": "X",
+        "影": "math_number"
+      },
+      {
+        "identifier": "MOTION_SETY",
+        "opcode": "motion_sety",
+        "入力": "Y",
+        "影": "math_number"
+      },
+      {
+        "identifier": "LOOKS_SAYFORSECS",
+        "opcode": "looks_sayforsecs",
+        "入力": "MESSAGE",
+        "影": "text"
+      },
+      {
+        "identifier": "LOOKS_SAYFORSECS",
+        "opcode": "looks_sayforsecs",
+        "入力": "SECS",
+        "影": "math_number"
+      },
+      {
+        "identifier": "LOOKS_SAY",
+        "opcode": "looks_say",
+        "入力": "MESSAGE",
+        "影": "text"
+      },
+      {
+        "identifier": "LOOKS_THINKFORSECS",
+        "opcode": "looks_thinkforsecs",
+        "入力": "MESSAGE",
+        "影": "text"
+      },
+      {
+        "identifier": "LOOKS_THINKFORSECS",
+        "opcode": "looks_thinkforsecs",
+        "入力": "SECS",
+        "影": "math_number"
+      },
+      {
+        "identifier": "LOOKS_THINK",
+        "opcode": "looks_think",
+        "入力": "MESSAGE",
+        "影": "text"
+      },
+      {
+        "identifier": "SENSING_ASKANDWAIT",
+        "opcode": "sensing_askandwait",
+        "入力": "QUESTION",
+        "影": "text"
+      },
+      {
+        "identifier": "DATA_SETVARIABLETO",
+        "opcode": "data_setvariableto",
+        "入力": "VALUE",
+        "影": "text"
+      },
+      {
+        "identifier": "DATA_CHANGEVARIABLEBY",
+        "opcode": "data_changevariableby",
+        "入力": "VALUE",
+        "影": "math_number"
+      },
+      {
+        "identifier": "DATA_ADDTOLIST",
+        "opcode": "data_addtolist",
+        "入力": "ITEM",
+        "影": "text"
+      },
+      {
+        "identifier": "DATA_DELETEOFLIST",
+        "opcode": "data_deleteoflist",
+        "入力": "INDEX",
+        "影": "math_number"
+      },
+      {
+        "identifier": "DATA_INSERTATLIST",
+        "opcode": "data_insertatlist",
+        "入力": "ITEM",
+        "影": "text"
+      },
+      {
+        "identifier": "DATA_INSERTATLIST",
+        "opcode": "data_insertatlist",
+        "入力": "INDEX",
+        "影": "math_number"
+      },
+      {
+        "identifier": "DATA_REPLACEITEMOFLIST",
+        "opcode": "data_replaceitemoflist",
+        "入力": "INDEX",
+        "影": "math_number"
+      },
+      {
+        "identifier": "DATA_REPLACEITEMOFLIST",
+        "opcode": "data_replaceitemoflist",
+        "入力": "ITEM",
+        "影": "text"
+      },
+      {
+        "identifier": "DATA_ITEMOFLIST",
+        "opcode": "data_itemoflist",
+        "入力": "INDEX",
+        "影": "math_number"
+      },
+      {
+        "identifier": "DATA_ITEMNUMOFLIST",
+        "opcode": "data_itemnumoflist",
+        "入力": "ITEM",
+        "影": "text"
+      },
+      {
+        "identifier": "DATA_LISTCONTAINSITEM",
+        "opcode": "data_listcontainsitem",
+        "入力": "ITEM",
+        "影": "text"
+      }
+    ],
+    "台帳から到達しない opcode": [
+      {
+        "opcode": "control_all_at_once",
+        "定義が空": false
+      },
+      {
+        "opcode": "control_clear_counter",
+        "定義が空": false
+      },
+      {
+        "opcode": "control_create_clone_of_menu",
+        "定義が空": true
+      },
+      {
+        "opcode": "control_for_each",
+        "定義が空": false
+      },
+      {
+        "opcode": "control_get_counter",
+        "定義が空": false
+      },
+      {
+        "opcode": "control_incr_counter",
+        "定義が空": false
+      },
+      {
+        "opcode": "control_while",
+        "定義が空": false
+      },
+      {
+        "opcode": "data_listcontents",
+        "定義が空": false
+      },
+      {
+        "opcode": "data_listindexall",
+        "定義が空": false
+      },
+      {
+        "opcode": "data_listindexrandom",
+        "定義が空": false
+      },
+      {
+        "opcode": "data_variable",
+        "定義が空": false
+      },
+      {
+        "opcode": "event_broadcast_menu",
+        "定義が空": false
+      },
+      {
+        "opcode": "event_touchingobjectmenu",
+        "定義が空": false
+      },
+      {
+        "opcode": "event_whentouchingobject",
+        "定義が空": false
+      },
+      {
+        "opcode": "looks_backdrops",
+        "定義が空": true
+      },
+      {
+        "opcode": "looks_changestretchby",
+        "定義が空": false
+      },
+      {
+        "opcode": "looks_costume",
+        "定義が空": true
+      },
+      {
+        "opcode": "looks_hideallsprites",
+        "定義が空": false
+      },
+      {
+        "opcode": "looks_setstretchto",
+        "定義が空": false
+      },
+      {
+        "opcode": "motion_align_scene",
+        "定義が空": false
+      },
+      {
+        "opcode": "motion_glideto_menu",
+        "定義が空": true
+      },
+      {
+        "opcode": "motion_goto_menu",
+        "定義が空": true
+      },
+      {
+        "opcode": "motion_pointtowards_menu",
+        "定義が空": true
+      },
+      {
+        "opcode": "motion_scroll_right",
+        "定義が空": false
+      },
+      {
+        "opcode": "motion_scroll_up",
+        "定義が空": false
+      },
+      {
+        "opcode": "motion_xscroll",
+        "定義が空": false
+      },
+      {
+        "opcode": "motion_yscroll",
+        "定義が空": false
+      },
+      {
+        "opcode": "sensing_distancetomenu",
+        "定義が空": true
+      },
+      {
+        "opcode": "sensing_keyoptions",
+        "定義が空": false
+      },
+      {
+        "opcode": "sensing_loud",
+        "定義が空": false
+      },
+      {
+        "opcode": "sensing_of_object_menu",
+        "定義が空": true
+      },
+      {
+        "opcode": "sensing_touchingobjectmenu",
+        "定義が空": true
+      },
+      {
+        "opcode": "sensing_userid",
+        "定義が空": false
+      },
+      {
+        "opcode": "sound_sounds_menu",
+        "定義が空": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+out/
+*.log
+
+# .claude は追跡する側を挙げる。除外する側を挙げる形にすると、後から置かれる
+# settings.local.json や hooks が既定で追跡下へ入る
+.claude/*
+!.claude/skills/

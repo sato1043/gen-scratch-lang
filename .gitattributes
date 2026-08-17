@@ -1,0 +1,10 @@
+# 追跡下のテキストは常に LF で持ち、LF で取り出す。
+#
+# 到達基準「追跡下の全ファイルの改行が LF」を、開発機の core.autocrlf 設定に頼らず保つ。
+# Git for Windows の既定（autocrlf=true）で clone すると作業ツリーが CRLF になり、
+# catalog --check と knowledge --check が「古い」という誤った診断名で必ず落ちる。
+* text=auto eol=lf
+
+# 中身をそのまま持つもの
+*.png binary
+*.sb3 binary

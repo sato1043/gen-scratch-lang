@@ -1,0 +1,74 @@
+# 検証を開発機以外でも走らせる。
+#
+# 手元は Windows x64 の 1 台だけで、移植性の主張はそこでしか確かめていなかった。
+# ネイティブ依存（canvas・@resvg/resvg-js）を持つため、環境が変われば入らない
+# 可能性がある。
+#
+# 追跡下の生成物（台帳・解説）が古びていないかも同時に見る。生成物は手元で書き
+# 出して commit するため、書き出し忘れは手元では気づけない。
+name: verify
+
+on:
+  push:
+  pull_request:
+
+# 既定へ任せない。既定は repo の設定で変わり、宣言の外で不変条件が決まる
+permissions:
+  contents: read
+
+# 同じ枝の古い実行を追い越させる。push と pull_request で二重に起動するため
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      # 版を並べたとき、片方で落ちても他方の結果を見たい
+      fail-fast: false
+      matrix:
+        # 下限と最新の両端を回す。下限だけでは利用者の大半が動かす版を測らなくなり、
+        # 最新だけでは宣言した下限が 1 度も走らない。matrix は並列なので待ち時間は
+        # 変わらない（実測 103〜147 秒）
+        node: ["24.12", "24"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      # lock のとおりに入れる。install だと lock を書き換えうるので使わない
+      - run: npm ci
+
+      - run: npm test
+
+      # 宣言と実体の食い違いを見る。配線しないと、直したつもりの状態が壊れても気づけない
+      - run: npm run typecheck
+
+      # 追跡下の生成物が、今の入力から組み立て直したものと一致するか
+      - run: node tools/cli.ts catalog --check
+      - run: node tools/cli.ts options
+      - run: node src/cli.ts knowledge --check
+
+      # 利用者の手元には開発依存が無い。その状態で本体が動くことを確かめる。
+      # prune では外れなかった（「up to date」を返して何も消さず、検査が空振りした）
+      - run: npm ci --omit=dev
+
+      # 外れていなければ、次の実行は何も測っていない
+      - name: assert dev dependencies are absent
+        run: test ! -d node_modules/scratch-blocks
+
+      - run: node src/cli.ts build projects/neko-to-score --out /tmp/neko.sb3
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm audit --audit-level=moderate
