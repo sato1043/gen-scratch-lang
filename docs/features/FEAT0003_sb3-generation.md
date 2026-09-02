@@ -12,6 +12,7 @@ source-tasks:
  - TASK0007_report-and-check-refinements
  - TASK0010_announcements-on-one-path
  - TASK0016_keep-values-through-roundtrip
+ - TASK0024_pen-blocks-and-extensions
 relates-to:
  - FEAT0002
 ---

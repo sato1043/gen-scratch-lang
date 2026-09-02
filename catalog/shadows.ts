@@ -155,6 +155,12 @@ export const SHADOWS: Record<string, Record<string, string>> = {
     NUM1: "math_number",
     NUM2: "math_number",
   },
+  pen_changePenColorParamBy: {
+    COLOR_PARAM: "pen_menu_colorParam",
+  },
+  pen_setPenColorParamTo: {
+    COLOR_PARAM: "pen_menu_colorParam",
+  },
   sensing_coloristouchingcolor: {
     COLOR: "colour_picker",
     COLOR2: "colour_picker",

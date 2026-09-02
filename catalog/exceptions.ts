@@ -12,9 +12,11 @@ type Exception = {
   identifier?: string
   /** 識別子を持たない記法を Scratch 2 の selector で指すもの */
   selector?: string
-  kind: "override" | "option" | "not-a-block" | "legacy"
-  /** kind が override のときの opcode */
+  kind: "override" | "option" | "not-a-block" | "legacy" | "duplicate"
+  /** kind が override のときの opcode。機械で導けるなら書かない */
   opcode?: string
+  /** 記法の引数の種別。上流の定義が誤っているときだけ書く */
+  inputs?: string[]
   /** 同じ記法が中身の形によって取る別の opcode */
   alsoCovers?: string[]
   /** なぜ機械で導けないか */
@@ -91,5 +93,61 @@ export const EXCEPTIONS: Exception[] = [
     selector: "setTempoTo:",
     kind: "legacy",
     reason: "Scratch 2 の記法。3.0 ではテンポは音楽の拡張機能へ移った",
+  },
+  {
+    identifier: "pen.setColorParam",
+    kind: "override",
+    inputs: ["%m.color", "%n"],
+    reason:
+      "上流どうしが食い違う。scratchblocks の定義表は第 2 引数を色（%c）とするが、" +
+      "scratch-vm 5.0.300 の getInfo() は VALUE を ArgumentType.NUMBER と宣言する。" +
+      "鮮やかさ・明るさ・透明度を 0〜100 の数で決めるブロックで、色を書く場所では" +
+      "ない。実装を持つ scratch-vm の側を正とする。色として扱うと影ブロックが" +
+      "colour_picker になり、Scratch が開いたときに壊れる",
+  },
+  // パレットに出ないペンの旧ブロックのうち 3 件。scratch-vm が hideFromPalette を
+  // 付けており、エディタで作った作品にも現れないため台帳へ入れない（TASK0024）。
+  // 残る 1 件（pen.setHue）は上の override が現行の opcode へ読み替えている
+  {
+    identifier: "pen.setHue",
+    kind: "override",
+    opcode: "pen_setPenColorToColor",
+    inputs: ["%c"],
+    reason:
+      "「ペンの色を%1にする」の綴りを 2 つのブロックが持ち、解析器はこちらを選ぶ" +
+      "（2026-09-02 に実際へ通して確かめた）。この識別子が本来指す " +
+      "pen_setPenHueToNumber は Scratch 3 のパレットに出ない旧ブロックなので、" +
+      "綴りから現行の pen_setPenColorToColor を指す。引数も色へ揃える。" +
+      "こうしないと、色を直に決める唯一のブロックが記法から呼べない",
+  },
+  {
+    identifier: "pen.setColor",
+    kind: "duplicate",
+    reason:
+      "日本語の綴り「ペンの色を%1にする」が pen.setHue と重なり、解析器は " +
+      "pen.setHue を選ぶ。同じ opcode（pen_setPenColorToColor）はそちらの綴りから" +
+      "呼べるため、こちらは台帳に置かない。置くと opcode が 2 度現れる",
+  },
+  {
+    identifier: "pen.changeHue",
+    kind: "legacy",
+    reason:
+      "Scratch 3 のパレットに出ない（scratch-vm が hideFromPalette を付ける）。" +
+      "色相を 0〜100 の数で動かす Scratch 2 由来の指定で、3.0 では " +
+      "pen_changePenColorParamBy が色・鮮やかさ・明るさ・透明度を選択肢で兼ねる",
+  },
+  {
+    identifier: "pen.setShade",
+    kind: "legacy",
+    reason:
+      "Scratch 3 のパレットに出ない（scratch-vm が hideFromPalette を付ける）。" +
+      "濃さは 3.0 の色の指定に無い概念で、明るさへ置き換わった",
+  },
+  {
+    identifier: "pen.changeShade",
+    kind: "legacy",
+    reason:
+      "Scratch 3 のパレットに出ない（scratch-vm が hideFromPalette を付ける）。" +
+      "濃さは 3.0 の色の指定に無い概念で、明るさへ置き換わった",
   },
 ]

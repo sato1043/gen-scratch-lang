@@ -46,10 +46,26 @@ node src/cli.ts knowledge --check
 - [既にある作品を読み解く](docs/knowledge/reading.md) — `read` の使い方と止まったときの表
 - [作品定義の仕様](docs/knowledge/project-definition.md) — `project.yaml` に書けるキー
 - [イディオム集](docs/knowledge/idioms/README.md) — 日常語とブロック構成の組
-- [ブロック解説](docs/knowledge/blocks/README.md) — core 9 カテゴリと覆わない範囲
+- [ブロック解説](docs/knowledge/blocks/README.md) — core 9 カテゴリとペン、覆わない範囲
 - [作業書](docs/tasks/) — 変更ごとの計画と作業記録
 
 ## エージェントから使う
+
+プロジェクトをクローンし、そのディレクトリの中で Claude Code を起動します。
+「○○をScratchで書きたい」などと指示すると（うまくいけば）outディレクトリに.sb3 が得られます。
+ブラウザのScratchで新しいプロジェクトを作り、ファイルメニューの「Load from your computer」
+から .sb3ファイルを読み込んでください。
+（読み込むときすでにあるスクリプトが消えるので気を付けてください）
+
+それと、自分でファイルメニューから保存した .sb3 をチャットに貼り付けてから、
+「このファイルを画像して」「解析して」などと指示すると、読み解くこともできます。
+
+しかしながら解析できる命令は基本的なものに限定されていて、すべての命令には対応していません。
+
+他人が作った .sb3 を渡すときは気を付けてください。作品の中のスプライト名・変数名・
+コメントはエージェントが読む文字列なので、そこに指示めいた文が書いてあると、それを
+読んだエージェントが従ってしまうことがあります。中身の分かっている作品に留めるのが
+安全です。
 
 エージェント（Claude Code 等）で作業するときの入口はスキル
 [words-to-scratch](.claude/skills/words-to-scratch/SKILL.md) である。言葉から記法を
@@ -63,8 +79,13 @@ node src/cli.ts knowledge --check
 
 | 環境 | 検証 |
 |---|---|
-| Windows x64 / Node 24 | 開発機で常用 |
+| Windows x64 / Node 24 | 開発機で常用（下の注記を見る）|
 | Linux x64 / Node 24 | CI で毎回 |
+
+**Windows では `npm test` の終了コードを合否に使えない。** 読み取りの検査
+（`test/read-output.test.ts`）がプロセスの終了時に落ちるため、中身がすべて通っていても
+非 0 を返す。合否は集計行（`ℹ pass` と `ℹ fail`）で読む。CI は Linux だけを回すので、
+この症状は CI に出ない。裏を返すと、**Windows 固有の退行を機械で捕まえる経路が無い**。
 
 `engines` は Node 26 以降も許すが、26 を回す検証は無い。linux-arm64 や musl（Alpine）では
 canvas の prebuild が無く、cairo・pango 等の system library が要る。

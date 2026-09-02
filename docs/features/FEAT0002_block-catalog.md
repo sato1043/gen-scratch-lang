@@ -5,6 +5,7 @@ requirements:
 source-tasks:
  - TASK0001_words-to-scratch-pipeline
  - TASK0005_upstream-drift-and-supply-chain
+ - TASK0024_pen-blocks-and-extensions
 ---
 
 ブロックの台帳
@@ -57,5 +58,7 @@ source-tasks:
 - 照合は改竄検知ではなく変化検知である。被検査対象と同じ出所から作ったオラクルであるため、
   汚染された値が一度受け入れられると以後は永久に一致し続ける。完全性を支えるのは lock の
   integrity と `npm ci` の強制で、この機能ではない
-- 拡張機能ブロック（ペン・音楽・micro:bit 等）は覆わない
+- 拡張機能ブロックはペンだけを覆う。他（音楽・micro:bit 等）は覆わない
+- ペンの opcode と引数名は scratch-blocks に無く（拡張の定義は実行時に作られる）、
+  scratch-vm から写して別出典として申告する。上流が動いても検知できない
 - 日本語の綴りが衝突する 6 組のうち 5 件のブロックは記法から呼べない

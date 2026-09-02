@@ -285,6 +285,16 @@ export const MENU_OPTIONS: Record<string, Record<string, Record<string, string>>
       "どれかの向き": "_random_",
     },
   },
+  // 出典は scratch-l10n の editor/extensions/ja.json（`pen.colorMenu.*`）。
+  // scratchblocks の日本語辞書は拡張機能のメニューを持たない（2026-09-02 実測）
+  pen_menu_colorParam: {
+    COLOR_PARAM: {
+      色: "color",
+      鮮やかさ: "saturation",
+      明るさ: "brightness",
+      透明度: "transparency",
+    },
+  },
   sensing_distancetomenu: {
     DISTANCETOMENU: {
       "マウスのポインター": "_mouse_",

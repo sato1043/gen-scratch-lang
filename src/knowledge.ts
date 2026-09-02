@@ -31,7 +31,11 @@ export const DEFINITION_MARKS: Marks = {
   end: "<!-- 定義の表から生成: ここまで -->",
 }
 
-/** core のカテゴリと、Scratch の画面での呼び名。並びは Scratch のパレットに合わせる */
+/**
+ * 台帳が扱うカテゴリと、Scratch の画面での呼び名。
+ *
+ * 並びは Scratch のパレットに合わせる。拡張機能は core 9 つの後ろに並ぶ。
+ */
 export const CATEGORIES = [
   { key: "motion", label: "動き" },
   { key: "looks", label: "見た目" },
@@ -42,6 +46,7 @@ export const CATEGORIES = [
   { key: "operators", label: "演算" },
   { key: "variables", label: "変数" },
   { key: "list", label: "リスト" },
+  { key: "pen", label: "ペン" },
 ]
 
 /** 台帳の形状の呼び名 */

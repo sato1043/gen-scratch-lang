@@ -2,7 +2,7 @@
   "生成元": {
     "scratchblocks": "3.7.1",
     "scratch-blocks": "2.1.19",
-    "手書きの表": "23162939d224"
+    "手書きの表": "e3fd0e033349"
   },
   "表の出典": [
     {
@@ -25,6 +25,27 @@
       "出典": "scratch-vm の src/serialization/sb3.js",
       "版": "5.0.300",
       "理由": "scratch-vm は 24MB あり、この 12 行のために依存へ加えない"
+    },
+    {
+      "表": "EXTENSION_DEFINITIONS",
+      "種別": "別出典",
+      "出典": "scratch-vm の src/extensions/scratch3_pen/index.js（getInfo）",
+      "版": "5.0.300",
+      "理由": "拡張機能のブロック定義は scratch-blocks に無い。実行時に作られるため静的な定義を持たず、2026-09-02 の実測で pen_ は 0 件だった。scratch-vm は 24MB あり、この 10 件のために依存へ加えない"
+    },
+    {
+      "表": "CORE_EXTENSIONS",
+      "種別": "別出典",
+      "出典": "scratch-vm の src/serialization/sb3.js（getExtensionIdForOpcode）",
+      "版": "5.0.300",
+      "理由": "opcode から拡張機能の id を導く規則と、拡張でない接頭辞の一覧。生成物の extensions を公式と同じ形で出すために要る"
+    },
+    {
+      "表": "MENU_OPTIONS（pen_menu_colorParam のぶん）",
+      "種別": "別出典",
+      "出典": "scratch-l10n の editor/extensions/ja.json（pen.colorMenu.*）",
+      "版": null,
+      "理由": "scratchblocks の日本語辞書は拡張機能のメニューを持たない（2026-09-02 実測）。版を持たないのは、公式の翻訳が rolling で番号を振らないため"
     },
     {
       "表": "SUPPLEMENT",
@@ -56,8 +77,8 @@
     }
   ],
   "件数": {
-    "台帳": 119,
-    "opcode を例外表から得た": 3,
+    "台帳": 128,
+    "opcode を例外表から得た": 4,
     "引数名を取れない": 2
   },
   "ブロック": [
@@ -78,6 +99,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -103,6 +125,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -128,6 +151,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -153,6 +177,7 @@
           "notation": "%d.direction",
           "shadow": "math_angle",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -178,6 +203,7 @@
           "notation": "%m.spriteOrMouse",
           "shadow": "motion_pointtowards_menu",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": {
             "マウスのポインター": "_mouse_",
             "どれかの向き": "_random_"
@@ -207,6 +233,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -217,6 +244,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -242,6 +270,7 @@
           "notation": "%m.location",
           "shadow": "motion_goto_menu",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": {
             "マウスのポインター": "_mouse_",
             "どこかの場所": "_random_"
@@ -272,6 +301,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -282,6 +312,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -292,6 +323,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -318,6 +350,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -328,6 +361,7 @@
           "notation": "%m.location",
           "shadow": "motion_glideto_menu",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": {
             "マウスのポインター": "_mouse_",
             "どこかの場所": "_random_"
@@ -356,6 +390,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -381,6 +416,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -406,6 +442,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -431,6 +468,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -456,6 +494,7 @@
           "notation": "%m.rotationStyle",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "左右のみ": "left-right",
             "回転しない": "don't rotate",
@@ -486,6 +525,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -496,6 +536,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -521,6 +562,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -547,6 +589,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -557,6 +600,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -582,6 +626,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -631,6 +676,7 @@
           "notation": "%m.costume",
           "shadow": "looks_costume",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -680,6 +726,7 @@
           "notation": "%m.backdrop",
           "shadow": "looks_backdrops",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": {
             "次の背景": "next backdrop",
             "前の背景": "previous backdrop",
@@ -709,6 +756,7 @@
           "notation": "%m.backdrop",
           "shadow": "looks_backdrops",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": {
             "次の背景": "next backdrop",
             "前の背景": "previous backdrop",
@@ -739,6 +787,7 @@
           "notation": "%m.effect",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "色": "COLOR",
             "魚眼レンズ": "FISHEYE",
@@ -757,6 +806,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -783,6 +833,7 @@
           "notation": "%m.effect",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "色": "COLOR",
             "魚眼レンズ": "FISHEYE",
@@ -801,6 +852,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -838,6 +890,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -863,6 +916,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -888,6 +942,7 @@
           "notation": "%m",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "最前面": "front",
             "最背面": "back"
@@ -917,6 +972,7 @@
           "notation": "%m",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "手前に出す": "forward",
             "奥に下げる": "backward"
@@ -930,6 +986,7 @@
           "notation": "%n",
           "shadow": "math_integer",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -955,6 +1012,7 @@
           "notation": "%m.sound",
           "shadow": "sound_sounds_menu",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -981,6 +1039,7 @@
           "notation": "%m",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "ピッチ": "PITCH",
             "左右にパン": "PAN"
@@ -994,6 +1053,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1020,6 +1080,7 @@
           "notation": "%m",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "ピッチ": "PITCH",
             "左右にパン": "PAN"
@@ -1033,6 +1094,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1070,6 +1132,7 @@
           "notation": "%m.sound",
           "shadow": "sound_sounds_menu",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1107,6 +1170,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1132,6 +1196,219 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "pen.clear",
+      "opcode": "pen_clear",
+      "category": "pen",
+      "shape": "stack",
+      "spec": "erase all",
+      "ja": "全部消す",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "pen.stamp",
+      "opcode": "pen_stamp",
+      "category": "pen",
+      "shape": "stack",
+      "spec": "stamp",
+      "ja": "スタンプ",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "pen.penDown",
+      "opcode": "pen_penDown",
+      "category": "pen",
+      "shape": "stack",
+      "spec": "pen down",
+      "ja": "ペンを下ろす",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "pen.penUp",
+      "opcode": "pen_penUp",
+      "category": "pen",
+      "shape": "stack",
+      "spec": "pen up",
+      "ja": "ペンを上げる",
+      "inputs": [],
+      "args": [],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "pen.setColorParam",
+      "opcode": "pen_setPenColorParamTo",
+      "category": "pen",
+      "shape": "stack",
+      "spec": "set pen %1 to %2",
+      "ja": "ペンの%1を%2にする",
+      "inputs": [
+        "%m.color",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "COLOR_PARAM",
+          "kind": "input",
+          "notation": "%m.color",
+          "shadow": "pen_menu_colorParam",
+          "shadowFrom": "表",
+          "shadowField": "colorParam",
+          "options": {
+            "色": "color",
+            "鮮やかさ": "saturation",
+            "明るさ": "brightness",
+            "透明度": "transparency"
+          },
+          "optionsFrom": "メニューの定義",
+          "namesAllowed": false
+        },
+        {
+          "name": "VALUE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "shadowField": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "pen.changeColorParam",
+      "opcode": "pen_changePenColorParamBy",
+      "category": "pen",
+      "shape": "stack",
+      "spec": "change pen %1 by %2",
+      "ja": "ペンの%1を%2ずつ変える",
+      "inputs": [
+        "%m.color",
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "COLOR_PARAM",
+          "kind": "input",
+          "notation": "%m.color",
+          "shadow": "pen_menu_colorParam",
+          "shadowFrom": "表",
+          "shadowField": "colorParam",
+          "options": {
+            "色": "color",
+            "鮮やかさ": "saturation",
+            "明るさ": "brightness",
+            "透明度": "transparency"
+          },
+          "optionsFrom": "メニューの定義",
+          "namesAllowed": false
+        },
+        {
+          "name": "VALUE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "shadowField": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "pen.setHue",
+      "opcode": "pen_setPenColorToColor",
+      "category": "pen",
+      "shape": "stack",
+      "spec": "set pen color to %1",
+      "ja": "ペンの色を%1にする",
+      "inputs": [
+        "%c"
+      ],
+      "args": [
+        {
+          "name": "COLOR",
+          "kind": "input",
+          "notation": "%c",
+          "shadow": "colour_picker",
+          "shadowFrom": "補い",
+          "shadowField": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "例外表"
+    },
+    {
+      "identifier": "pen.changeSize",
+      "opcode": "pen_changePenSizeBy",
+      "category": "pen",
+      "shape": "stack",
+      "spec": "change pen size by %1",
+      "ja": "ペンの太さを%1ずつ変える",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "SIZE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "shadowField": null,
+          "options": null,
+          "optionsFrom": null,
+          "namesAllowed": false
+        }
+      ],
+      "alsoCovers": [],
+      "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "pen.setSize",
+      "opcode": "pen_setPenSizeTo",
+      "category": "pen",
+      "shape": "stack",
+      "spec": "set pen size to %1",
+      "ja": "ペンの太さを%1にする",
+      "inputs": [
+        "%n"
+      ],
+      "args": [
+        {
+          "name": "SIZE",
+          "kind": "input",
+          "notation": "%n",
+          "shadow": "math_number",
+          "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1169,6 +1446,7 @@
           "notation": "%m.key",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "0": "0",
             "1": "1",
@@ -1276,6 +1554,7 @@
           "notation": "%m.triggerSensor",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "音量": "LOUDNESS",
             "タイマー": "TIMER"
@@ -1289,6 +1568,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1314,6 +1594,7 @@
           "notation": "%m.broadcast",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1339,6 +1620,7 @@
           "notation": "%m.broadcast",
           "shadow": "event_broadcast_menu",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1364,6 +1646,7 @@
           "notation": "%m.broadcast",
           "shadow": "event_broadcast_menu",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1389,6 +1672,7 @@
           "notation": "%n",
           "shadow": "math_positive_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1414,6 +1698,7 @@
           "notation": "%n",
           "shadow": "math_whole_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1422,7 +1707,8 @@
           "name": "SUBSTACK",
           "kind": "statement",
           "notation": null,
-          "shadow": null
+          "shadow": null,
+          "shadowField": null
         }
       ],
       "alsoCovers": [],
@@ -1441,7 +1727,8 @@
           "name": "SUBSTACK",
           "kind": "statement",
           "notation": null,
-          "shadow": null
+          "shadow": null,
+          "shadowField": null
         }
       ],
       "alsoCovers": [],
@@ -1464,6 +1751,7 @@
           "notation": "%b",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1472,7 +1760,8 @@
           "name": "SUBSTACK",
           "kind": "statement",
           "notation": null,
-          "shadow": null
+          "shadow": null,
+          "shadowField": null
         }
       ],
       "alsoCovers": [
@@ -1485,6 +1774,7 @@
               "notation": "%b",
               "shadow": null,
               "shadowFrom": null,
+              "shadowField": null,
               "options": null,
               "optionsFrom": null,
               "namesAllowed": false
@@ -1493,13 +1783,15 @@
               "name": "SUBSTACK",
               "kind": "statement",
               "notation": null,
-              "shadow": null
+              "shadow": null,
+              "shadowField": null
             },
             {
               "name": "SUBSTACK2",
               "kind": "statement",
               "notation": null,
-              "shadow": null
+              "shadow": null,
+              "shadowField": null
             }
           ]
         }
@@ -1523,6 +1815,7 @@
           "notation": "%b",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1548,6 +1841,7 @@
           "notation": "%b",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1556,7 +1850,8 @@
           "name": "SUBSTACK",
           "kind": "statement",
           "notation": null,
-          "shadow": null
+          "shadow": null,
+          "shadowField": null
         }
       ],
       "alsoCovers": [],
@@ -1579,6 +1874,7 @@
           "notation": "%m.stop",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "すべてを止める": "all",
             "このスクリプトを止める": "this script",
@@ -1620,6 +1916,7 @@
           "notation": "%m.spriteOnly",
           "shadow": "control_create_clone_of_menu",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": {
             "自分自身": "_myself_"
           },
@@ -1659,6 +1956,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1697,6 +1995,7 @@
           "notation": "%m.var",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1707,6 +2006,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1733,6 +2033,7 @@
           "notation": "%m.var",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1743,6 +2044,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1768,6 +2070,7 @@
           "notation": "%m.var",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1793,6 +2096,7 @@
           "notation": "%m.var",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1819,6 +2123,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1829,6 +2134,7 @@
           "notation": "%m.list",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1855,6 +2161,7 @@
           "notation": "%d.listDeleteItem",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1865,6 +2172,7 @@
           "notation": "%m.list",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1890,6 +2198,7 @@
           "notation": "%m.list",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1929,6 +2238,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1939,6 +2249,7 @@
           "notation": "%d.listItem",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1949,6 +2260,7 @@
           "notation": "%m.list",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1976,6 +2288,7 @@
           "notation": "%d.listItem",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -1986,6 +2299,7 @@
           "notation": "%m.list",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -1996,6 +2310,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2021,6 +2336,7 @@
           "notation": "%m.list",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -2046,6 +2362,7 @@
           "notation": "%m.list",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -2107,6 +2424,7 @@
           "notation": "%m",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "番号": "number",
             "名前": "name"
@@ -2147,6 +2465,7 @@
           "notation": "%m",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "番号": "number",
             "名前": "name"
@@ -2187,6 +2506,7 @@
           "notation": "%m.touching",
           "shadow": "sensing_touchingobjectmenu",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": {
             "マウスのポインター": "_mouse_",
             "端": "_edge_"
@@ -2215,6 +2535,7 @@
           "notation": "%c",
           "shadow": "colour_picker",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2241,6 +2562,7 @@
           "notation": "%c",
           "shadow": "colour_picker",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2251,6 +2573,7 @@
           "notation": "%c",
           "shadow": "colour_picker",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2276,6 +2599,7 @@
           "notation": "%m.spriteOrMouse",
           "shadow": "sensing_distancetomenu",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": {
             "マウスのポインター": "_mouse_"
           },
@@ -2315,6 +2639,7 @@
           "notation": "%m.key",
           "shadow": "sensing_keyoptions",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": {
             "0": "0",
             "1": "1",
@@ -2419,6 +2744,7 @@
           "notation": "%m",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "できる": "draggable",
             "できない": "not draggable"
@@ -2486,6 +2812,7 @@
           "notation": "%m.timeAndDate",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "年": "YEAR",
             "月": "MONTH",
@@ -2556,6 +2883,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2566,6 +2894,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2592,6 +2921,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2602,6 +2932,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2628,6 +2959,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2638,6 +2970,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2664,6 +2997,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2674,6 +3008,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2700,6 +3035,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2710,6 +3046,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2736,6 +3073,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2746,6 +3084,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2772,6 +3111,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2782,6 +3122,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2808,6 +3149,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2818,6 +3160,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2844,6 +3187,7 @@
           "notation": "%b",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2854,6 +3198,7 @@
           "notation": "%b",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2880,6 +3225,7 @@
           "notation": "%b",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2890,6 +3236,7 @@
           "notation": "%b",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2915,6 +3262,7 @@
           "notation": "%b",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2941,6 +3289,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2951,6 +3300,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2977,6 +3327,7 @@
           "notation": "%n",
           "shadow": "math_whole_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -2987,6 +3338,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -3012,6 +3364,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -3038,6 +3391,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -3048,6 +3402,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -3073,6 +3428,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -3099,6 +3455,7 @@
           "notation": "%m.mathOp",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": {
             "絶対値": "abs",
             "切り下げ": "floor",
@@ -3124,6 +3481,7 @@
           "notation": "%n",
           "shadow": "math_number",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -3150,6 +3508,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -3160,6 +3519,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "表",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -3186,6 +3546,7 @@
           "notation": "%d.listItem",
           "shadow": "math_number",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -3196,6 +3557,7 @@
           "notation": "%m.list",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -3222,6 +3584,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -3232,6 +3595,7 @@
           "notation": "%m.list",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -3257,6 +3621,7 @@
           "notation": "%m.list",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -3283,6 +3648,7 @@
           "notation": "%m.list",
           "shadow": null,
           "shadowFrom": null,
+          "shadowField": null,
           "options": null,
           "optionsFrom": "名前をそのまま使う",
           "namesAllowed": true
@@ -3293,6 +3659,7 @@
           "notation": "%s",
           "shadow": "text",
           "shadowFrom": "補い",
+          "shadowField": null,
           "options": null,
           "optionsFrom": null,
           "namesAllowed": false
@@ -3431,25 +3798,6 @@
         ]
       },
       {
-        "category": "pen",
-        "件数": 13,
-        "識別子": [
-          "pen.clear",
-          "pen.stamp",
-          "pen.penDown",
-          "pen.penUp",
-          "pen.setColor",
-          "pen.changeHue",
-          "pen.setColorParam",
-          "pen.changeColorParam",
-          "pen.setHue",
-          "pen.changeShade",
-          "pen.setShade",
-          "pen.changeSize",
-          "pen.setSize"
-        ]
-      },
-      {
         "category": "translate",
         "件数": 2,
         "識別子": [
@@ -3529,7 +3877,7 @@
         "reason": "ブロックでなく記法の部品。C 型ブロックの終わりを示す綴りで、解析の時点で閉じ役として消費される"
       }
     ],
-    "Scratch 2 の記法": [
+    "今の Scratch で置けない記法": [
       {
         "identifier": null,
         "selector": "comeToFront",
@@ -3547,6 +3895,32 @@
         "selector": "setTempoTo:",
         "spec": "set tempo to %1 bpm",
         "reason": "Scratch 2 の記法。3.0 ではテンポは音楽の拡張機能へ移った"
+      },
+      {
+        "identifier": "pen.changeHue",
+        "selector": "changePenHueBy:",
+        "spec": "change pen color by %1",
+        "reason": "Scratch 3 のパレットに出ない（scratch-vm が hideFromPalette を付ける）。色相を 0〜100 の数で動かす Scratch 2 由来の指定で、3.0 では pen_changePenColorParamBy が色・鮮やかさ・明るさ・透明度を選択肢で兼ねる"
+      },
+      {
+        "identifier": "pen.changeShade",
+        "selector": "changePenShadeBy:",
+        "spec": "change pen shade by %1",
+        "reason": "Scratch 3 のパレットに出ない（scratch-vm が hideFromPalette を付ける）。濃さは 3.0 の色の指定に無い概念で、明るさへ置き換わった"
+      },
+      {
+        "identifier": "pen.setShade",
+        "selector": "setPenShadeTo:",
+        "spec": "set pen shade to %1",
+        "reason": "Scratch 3 のパレットに出ない（scratch-vm が hideFromPalette を付ける）。濃さは 3.0 の色の指定に無い概念で、明るさへ置き換わった"
+      }
+    ],
+    "綴りが衝突して呼べない記法": [
+      {
+        "identifier": "pen.setColor",
+        "selector": "penColor:",
+        "spec": "set pen color to %1",
+        "reason": "日本語の綴り「ペンの色を%1にする」が pen.setHue と重なり、解析器は pen.setHue を選ぶ。同じ opcode（pen_setPenColorToColor）はそちらの綴りから呼べるため、こちらは台帳に置かない。置くと opcode が 2 度現れる"
       }
     ],
     "引数名を取れないブロック": [
@@ -3645,6 +4019,36 @@
         "opcode": "looks_think",
         "入力": "MESSAGE",
         "影": "text"
+      },
+      {
+        "identifier": "pen.setColorParam",
+        "opcode": "pen_setPenColorParamTo",
+        "入力": "VALUE",
+        "影": "math_number"
+      },
+      {
+        "identifier": "pen.changeColorParam",
+        "opcode": "pen_changePenColorParamBy",
+        "入力": "VALUE",
+        "影": "math_number"
+      },
+      {
+        "identifier": "pen.setHue",
+        "opcode": "pen_setPenColorToColor",
+        "入力": "COLOR",
+        "影": "colour_picker"
+      },
+      {
+        "identifier": "pen.changeSize",
+        "opcode": "pen_changePenSizeBy",
+        "入力": "SIZE",
+        "影": "math_number"
+      },
+      {
+        "identifier": "pen.setSize",
+        "opcode": "pen_setPenSizeTo",
+        "入力": "SIZE",
+        "影": "math_number"
       },
       {
         "identifier": "SENSING_ASKANDWAIT",
@@ -3827,6 +4231,10 @@
       {
         "opcode": "motion_yscroll",
         "定義が空": false
+      },
+      {
+        "opcode": "pen_menu_colorParam",
+        "定義が空": true
       },
       {
         "opcode": "sensing_distancetomenu",

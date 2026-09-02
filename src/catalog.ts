@@ -39,6 +39,8 @@ export type CatalogArgument = {
   shadow: string | null
   /** 影の出どころ */
   shadowFrom: string | null
+  /** メニューの影が値を収める欄。規則（入力名と同じ）から外れるときだけ入る */
+  shadowField: string | null
   /** 選択肢 */
   options: Record<string, string> | null
   /** 選択肢の出どころ */

@@ -2,6 +2,11 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import commands from "scratchblocks/syntax/commands.js"
 import { EXCEPTIONS } from "../catalog/exceptions.ts"
+import {
+  CORE_EXTENSIONS,
+  EXTENSION_DEFINITIONS,
+  extensionIdOf,
+} from "../catalog/extensions.ts"
 import { OPTIONS } from "../catalog/dropdowns.ts"
 import { PRIMITIVES } from "../catalog/shadows.ts"
 import { mkdtempSync, writeFileSync } from "node:fs"
@@ -14,7 +19,12 @@ import {
   loadCatalog,
   stampedCatalogOf,
 } from "../src/catalog.ts"
-import { CORE_CATEGORIES, buildCatalog } from "../tools/build-catalog.ts"
+import {
+  CORE_CATEGORIES,
+  FINGERPRINTED,
+  LISTED_CATEGORIES,
+  buildCatalog,
+} from "../tools/build-catalog.ts"
 import { readDefinitions } from "../tools/opcodes.ts"
 import { buildProject } from "../src/project.ts"
 import { readSb3 } from "../src/read.ts"
@@ -40,7 +50,11 @@ const CORE = [
   "list",
 ]
 const CORE_COUNT = 127
-const LISTED_COUNT = 119
+
+/** 台帳が扱うカテゴリ。core 9 つに、扱うと裁定した拡張機能を足したもの */
+const LISTED = [...CORE, "pen"]
+const PEN_COUNT = 13
+const LISTED_COUNT = 128
 
 /** 例外表を差し替えて組み立て、出た問題の種別を返す */
 function kindsWith(exceptions: any[]) {
@@ -56,19 +70,26 @@ test("例外表どおりに組み立てれば整合が取れる", () => {
   assert.deepEqual(problems, [])
 })
 
-test("台帳が扱う範囲が core 9 カテゴリと一致する", () => {
+test("台帳が扱う範囲が、宣言したカテゴリと一致する", () => {
+  // core の 9 つと、台帳が扱う範囲を別々に見る。片方だけを見ると、拡張機能を
+  // 足したときに core の定義がずれても気づけない
   assert.deepEqual([...CORE_CATEGORIES].sort(), [...CORE].sort())
+  assert.deepEqual([...LISTED_CATEGORIES].sort(), [...LISTED].sort())
   assert.deepEqual(
     [...new Set(catalog.ブロック.map(b => b.category))].sort(),
-    // 選択肢と Scratch 2 の記法をすべて除いたカテゴリは台帳に残らない
-    CORE.filter(c => catalog.ブロック.some(b => b.category === c)).sort(),
+    // 選択肢と置けない記法をすべて除いたカテゴリは台帳に残らない
+    LISTED.filter(c => catalog.ブロック.some(b => b.category === c)).sort(),
   )
   assert.equal(catalog.ブロック.length, LISTED_COUNT)
 })
 
-test("core 9 カテゴリのブロックが 1 件残らず説明される", () => {
-  const core = commands.filter((c: any) => CORE.includes(c.category))
-  assert.equal(core.length, CORE_COUNT, "上流のブロック数が変わっている")
+test("扱うカテゴリのブロックが 1 件残らず説明される", () => {
+  const core = commands.filter((c: any) => LISTED.includes(c.category))
+  assert.equal(
+    core.length,
+    CORE_COUNT + PEN_COUNT,
+    "上流のブロック数が変わっている",
+  )
 
   const listed = new Set(catalog.ブロック.map(b => b.identifier))
   const declared = new Set(EXCEPTIONS.map(e => e.identifier ?? e.selector))
@@ -78,19 +99,81 @@ test("core 9 カテゴリのブロックが 1 件残らず説明される", () =
     .filter((key: string) => !listed.has(key) && !declared.has(key))
   assert.deepEqual(orphans, [], "台帳にも例外表にも無いブロックが残っている")
 
-  // 覆えた数と覆えない数の合計が core の総数に戻る。どちらにも数えられない取りこぼしが
+  // 覆えた数と覆えない数の合計が上流の総数に戻る。どちらにも数えられない取りこぼしが
   // あれば、この等式が崩れる
   const excluded =
     catalog.覆わない範囲["ドロップダウンの選択肢"].length +
     catalog.覆わない範囲["ブロックでない記法"].length +
-    catalog.覆わない範囲["Scratch 2 の記法"].length
+    catalog.覆わない範囲["今の Scratch で置けない記法"].length +
+    catalog.覆わない範囲["綴りが衝突して呼べない記法"].length
   assert.equal(catalog.ブロック.length + excluded, core.length)
+})
+
+test("台帳の指紋が、手書きの表を 1 つも取りこぼさない", () => {
+  // 実装から借りず、指紋が畳むべき表を書き下す。表を足して指紋へ入れ忘れると、
+  // その表を直しても台帳の版が動かず catalogDrift が沈黙する（2026-09-02 に 3 表が漏れた）
+  const EXPECTED = [
+    "CORE_EXTENSIONS",
+    "EXTENSION_DEFINITIONS",
+    "FALLBACK",
+    "MENU_OPTIONS",
+    "NAME_KINDS",
+    "OPTIONS",
+    "PRIMITIVES",
+    "SHADOWS",
+    "SUPPLEMENT",
+  ]
+  assert.deepEqual(
+    Object.keys(FINGERPRINTED).sort(),
+    EXPECTED,
+    "指紋が畳む表が変わった。足した表を EXPECTED へも足す",
+  )
+
+  // 例外表は引数で渡るので FINGERPRINTED に無い。指紋が実際に反応することを見る
+  const base = buildCatalog().catalog[CATALOG_KEYS.ORIGIN]["手書きの表"]
+  const moved = buildCatalog({
+    exceptions: [
+      ...EXCEPTIONS,
+      { identifier: "MOTION_MOVESTEPS", kind: "option", reason: "指紋を動かすための作り話" },
+    ],
+  }).catalog[CATALOG_KEYS.ORIGIN]["手書きの表"]
+  assert.notEqual(base, moved, "例外表を変えても指紋が動かない")
+})
+
+test("拡張機能でない接頭辞の一覧が、上流の CORE_EXTENSIONS と一致する", () => {
+  // 実装から借りず書き下す。出典は scratch-vm 5.0.300 の src/serialization/sb3.js。
+  // 1 件でも欠けると、その接頭辞を持つ core のブロックが拡張機能として申告される
+  const EXPECTED = [
+    "argument",
+    "colour",
+    "control",
+    "data",
+    "event",
+    "looks",
+    "math",
+    "motion",
+    "operator",
+    "procedures",
+    "sensing",
+    "sound",
+  ]
+  assert.deepEqual([...CORE_EXTENSIONS].sort(), EXPECTED)
+
+  // 各要素が実際に効いていることを見る。表に在る名前は拡張機能と判定されない
+  for (const prefix of CORE_EXTENSIONS) {
+    assert.equal(extensionIdOf(`${prefix}_something`), null, `${prefix} が拡張と判定された`)
+  }
+  // 表に無い接頭辞は拡張機能になる。対照が無いと、常に null を返す実装でも通る
+  assert.equal(extensionIdOf("pen_penDown"), "pen")
+  assert.equal(extensionIdOf("music_setTempo"), "music")
 })
 
 test("台帳の全ブロックが opcode を持ち、opcode は重複しない", () => {
   const opcodes = catalog.ブロック.map(b => b.opcode)
   for (const block of catalog.ブロック) {
-    assert.match(block.opcode, /^[a-z][a-z0-9_]*$/, block.identifier)
+    // 拡張機能の opcode は語の切れ目を大文字で書く（`pen_penDown`）。core は
+    // すべて小文字だが、形の検査は両方を通す
+    assert.match(block.opcode, /^[a-z][A-Za-z0-9_]*$/, block.identifier)
   }
   assert.equal(new Set(opcodes).size, opcodes.length, "同じ opcode が 2 度出ている")
 })
@@ -113,6 +196,7 @@ test("日本語ラベルと引数名が台帳に載る", () => {
         notation: "%n",
         shadow: "math_number",
         shadowFrom: "表",
+        shadowField: null,
         options: null,
         optionsFrom: null,
         namesAllowed: false,
@@ -244,7 +328,12 @@ test("決まった選択肢と作品ごとの名前を併せ持つ入力を、�
 })
 
 test("影ブロックが原始値か実在するブロックのどちらかである", () => {
-  const known = new Set(readDefinitions().definitions.map(d => d.opcode))
+  // 拡張機能の定義は scratch-blocks に無い（実行時に作られる）。写した側も
+  // 実在の元として数える。写しそのものが正しいかは、別の出典から抽出した表と
+  // 突き合わせる検査（serialize.test.ts の MENU_FIELDS）が見る
+  const known = new Set(
+    [...readDefinitions().definitions, ...EXTENSION_DEFINITIONS].map(d => d.opcode),
+  )
   for (const block of catalog.ブロック) {
     for (const arg of block.args ?? []) {
       if (!arg.shadow) continue
@@ -283,9 +372,19 @@ test("覆わない範囲を 0 件で装わない", () => {
   const 拡張 = 範囲["core の外のカテゴリ"]
   assert.ok(拡張.length > 0, "core の外のカテゴリが 1 つも申告されていない")
   const names = 拡張.map(g => g.category)
-  for (const category of ["music", "pen", "microbit", "obsolete"]) {
+  for (const category of ["music", "microbit", "obsolete"]) {
     assert.ok(names.includes(category), `${category} が申告に無い`)
   }
+  // 扱うと裁定したカテゴリは、覆わない範囲の側に残っていてはいけない
+  assert.ok(!names.includes("pen"), "扱っている pen が覆わない範囲に残っている")
+
+  // 除外した綴りも群として申告する。0 件を装わない
+  const 衝突 = 範囲["綴りが衝突して呼べない記法"]
+  assert.ok(Array.isArray(衝突), "綴りの衝突の群が無い")
+  assert.ok(
+    衝突.some((e: any) => e.identifier === "pen.setColor"),
+    "pen.setColor の除外が申告されていない",
+  )
   for (const group of 拡張) {
     // 件数と一覧の双方を持つ群である。片方が欠けていれば数えるものが無い
     assert.ok(group.識別子, `${group.category} が識別子の一覧を持たない`)
@@ -307,7 +406,7 @@ test("覆わない範囲を 0 件で装わない", () => {
 
   assert.ok(範囲["ドロップダウンの選択肢"].length > 0)
   assert.ok(範囲["ブロックでない記法"].length > 0)
-  assert.ok(範囲["Scratch 2 の記法"].length > 0)
+  assert.ok(範囲["今の Scratch で置けない記法"].length > 0)
 
   // 影ブロック表の出典は 105 ブロックしか並べていない。規則で補ったぶんは
   // 表から引いたぶんより確度が落ちるので、件数と一覧を出す
@@ -323,7 +422,8 @@ test("覆わない範囲を 0 件で装わない", () => {
   for (const key of [
     "ドロップダウンの選択肢",
     "ブロックでない記法",
-    "Scratch 2 の記法",
+    "今の Scratch で置けない記法",
+    "綴りが衝突して呼べない記法",
   ]) {
     for (const entry of 範囲[key]) {
       assert.ok(entry.reason, `${key} の項目に理由が無い`)
@@ -380,7 +480,7 @@ test("例外表の種別が読めないと失敗する", () => {
   assert.deepEqual(kinds, ["例外表の種別が読めない", "opcode を解決できない"])
 })
 
-test("例外表の override に opcode が無いと失敗する", () => {
+test("例外表の override が何も上書きしていないと失敗する", () => {
   const kinds = kindsWith(
     EXCEPTIONS.map(e =>
       e.identifier === "SENSING_OF"
@@ -388,7 +488,10 @@ test("例外表の override に opcode が無いと失敗する", () => {
         : e,
     ),
   )
-  assert.deepEqual(kinds, ["例外表に opcode が無い", "opcode を解決できない"])
+  assert.deepEqual(kinds, [
+    "例外表が何も上書きしていない",
+    "opcode を解決できない",
+  ])
 })
 
 test("2 つのブロックが同じ opcode を指すと失敗する", () => {

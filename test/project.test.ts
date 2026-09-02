@@ -171,6 +171,24 @@ test("コスチュームを 1 つ同梱し、素材の名前が中身から決�
   }
 })
 
+test("拡張機能の申告を、使ったブロックから導く", async () => {
+  const withPen = await build({
+    "project.yaml": ["スプライト:", "  - 名前: 絵かき", "    スクリプト: e.sbk"].join("\n"),
+    "e.sbk": ["ペンを下ろす", "(10) 歩動かす"].join("\n"),
+  })
+  assert.deepEqual(withPen.problems, [])
+  assert.deepEqual(withPen.project.extensions, ["pen"])
+  await official(withPen.project)
+
+  // 使っていなければ空で申告する。0 件を装わず、欄そのものは出す
+  const without = await build({
+    "project.yaml": ["スプライト:", "  - 名前: ネコ", "    スクリプト: n.sbk"].join("\n"),
+    "n.sbk": "(10) 歩動かす",
+  })
+  assert.deepEqual(without.problems, [])
+  assert.deepEqual(without.project.extensions, [])
+})
+
 test("台帳で解けないブロックを問題として返し、記法ファイルと行を示す", async () => {
   const { problems } = await build({
     "project.yaml": ["スプライト:", "  - 名前: ネコ", "    スクリプト: neko.sbk"].join("\n"),

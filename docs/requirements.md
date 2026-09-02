@@ -69,15 +69,19 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
 ### 🚛✔️ SREQ0002 ブロックの台帳を得て、覆う範囲と覆わない範囲を知る
 
 - 由来ビジネス要求: BREQ0002
-- 収集元: TASK0001_words-to-scratch-pipeline, TASK0005_upstream-drift-and-supply-chain
+- 収集元: TASK0001_words-to-scratch-pipeline, TASK0005_upstream-drift-and-supply-chain,
+  TASK0024_pen-blocks-and-extensions, TASK0026_watch-the-versions-we-copied-from
 - 実現機能: FEAT0002
 - 品質特性: 機能適合性, 保守性
-- 実現状況: 実現済み
+- 実現状況: 実現中
 - 履歴:
   - 🚛✔️ TASK0001 で実現（core 9 カテゴリ 119 件の台帳と、覆わない範囲の申告）
   - 🚛✔️ TASK0005 で拡張（台帳の入力が上流の現在の版と食い違わないことの照合と、
     照合できない表の出典・版の申告）
-- 覆わない範囲: 拡張機能ブロック（ペン・音楽・micro:bit 等）。台帳の内容そのものを
+  - 🚛✔️ TASK0024 で拡張（扱う範囲を core とペンへ広げ、scratch-blocks が持たない
+    定義を別出典として申告。除外の群を綴りの衝突まで分けた）
+  - 📢🔛 TASK0026 で提案（写し元の版で陳腐化を見張る。起票済み・未着手）
+- 覆わない範囲: ペン以外の拡張機能ブロック（音楽・micro:bit 等）。台帳の内容そのものを
   人が編集する経路（台帳は生成物である）。上流が定義を失った表（旧版が出典の影ブロック・
   メニューの内部値）の照合 —— これらは出典の版が動いたことしか分からず、中身の食い違いは
   検知できない。上流が汚染された場合の改竄検知（同じ出所から作ったオラクルであるため、
@@ -91,13 +95,18 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
 ### 🚛✔️ SREQ0003 記法と作品定義から Scratch で動く .sb3 を得る
 
 - 由来ビジネス要求: BREQ0001
-- 収集元: TASK0001_words-to-scratch-pipeline
+- 収集元: TASK0001_words-to-scratch-pipeline, TASK0024_pen-blocks-and-extensions,
+  TASK0025_carry-assets-through-roundtrip
 - 実現機能: FEAT0003
 - 品質特性: 機能適合性, 信頼性
-- 実現状況: 実現済み
+- 実現状況: 実現中
 - 履歴:
   - 🚛✔️ TASK0001 で実現（決定論的な .sb3 の生成・公式検証・往復検査）
-- 覆わない範囲: 画像・音声素材の作成（コスチュームは最小の 1 種のみ同梱）。Scratch
+  - 🚛✔️ TASK0024 で拡張（ペンのブロックを組めるようにし、使ったブロックから
+    拡張機能の申告を導いて生成物へ出す）
+  - 📢🔛 TASK0025 で提案（素材を往復で保つ。起票済み・未着手）
+- 覆わない範囲: 画像・音声素材の作成（コスチュームは最小の 1 種のみ同梱。**利用者が
+  用意した素材の取り込みは扱う余地があり、TASK0025 で検討する**）。Scratch
   エディタの GUI 機能の代替。Scratch の実行エンジンの再現
 
 記法と作品定義から .sb3 を得られ、Scratch エディタで開いて動かせる。台帳に無い
@@ -142,10 +151,11 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
 - 由来ビジネス要求: BREQ0003
 - 収集元: TASK0002_read-sb3-projects, TASK0015_read-refused-projects,
   TASK0009_output-contract-for-read, TASK0010_announcements-on-one-path,
-  TASK0016_keep-values-through-roundtrip, TASK0013_guide-for-reading
+  TASK0016_keep-values-through-roundtrip, TASK0013_guide-for-reading,
+  TASK0025_carry-assets-through-roundtrip
 - 実現機能: FEAT0005
 - 品質特性: 機能適合性, 使用性
-- 実現状況: 実現済み
+- 実現状況: 実現中
 - 履歴:
   - 📢🔛 TASK0002 で提案（起票済み・未着手）
   - 🚛✔️ TASK0002 で実現（記法・図・要約・作品定義の書き出しと、記法にできない
@@ -158,6 +168,7 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
     生の制御文字が入らない）
   - 🚛✔️ TASK0013 で拡充（README・知識層からの案内と、止まったとき次に見る先の導線。
     憲章の提供価値・成功の判定へ読む向きを反映）
+  - 📢🔛 TASK0025 で提案（素材を往復で保つ。起票済み・未着手）
 - 覆わない範囲: .sb3 の編集と書き戻し。プロジェクトの実行・シミュレーション。Scratch
   のウェブサイトからの作品取得。素材（画像・音声）そのものの書き出し。逃げ道を通した
   読み取りの正しさ（Scratch で開けること・組み立て直せること・記法が実物と一致する

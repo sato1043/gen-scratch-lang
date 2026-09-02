@@ -7,14 +7,19 @@ import { catalogOrStop } from "./fixtures.ts"
 const catalog = catalogOrStop()
 const snippets = loadSnippets(new URL("../docs/knowledge/idioms/", import.meta.url))
 
-/** 台帳が覆う core のカテゴリ。実装から借りず、覆うべき範囲として書き下す */
-const CORE = [
+/**
+ * 台帳が覆うカテゴリ。実装から借りず、覆うべき範囲として書き下す。
+ *
+ * core の 9 つに、扱うと裁定した拡張機能（ペン）を足したもの。
+ */
+const LISTED = [
   "control",
   "events",
   "list",
   "looks",
   "motion",
   "operators",
+  "pen",
   "sensing",
   "sound",
   "variables",
@@ -26,7 +31,7 @@ test("イディオム集から記法を取り出せる", () => {
   assert.ok(snippets.length >= 12, `イディオムが ${snippets.length} 件しかない`)
 })
 
-test("イディオム集が core 9 カテゴリすべてに触れる", async () => {
+test("イディオム集が台帳の扱うカテゴリすべてに触れる", async () => {
   // 数だけを見張ると、1 つのカテゴリに偏った 12 件でも基準を満たしてしまう
   const touched = new Set()
   for (const snippet of snippets) {
@@ -35,7 +40,7 @@ test("イディオム集が core 9 カテゴリすべてに触れる", async () 
       if (entry) touched.add(entry.category)
     }
   }
-  assert.deepEqual([...touched].sort(), CORE, "触れていないカテゴリがある")
+  assert.deepEqual([...touched].sort(), LISTED, "触れていないカテゴリがある")
 })
 
 /** 手順書に載せた記法。説明のための飾りではなく、成立することを確かめる対象とする */

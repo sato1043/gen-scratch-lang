@@ -70,6 +70,37 @@ export const PROVENANCE: Source[] = [
     理由: "scratch-vm は 24MB あり、この 12 行のために依存へ加えない",
   },
   {
+    表: "EXTENSION_DEFINITIONS",
+    種別: "別出典",
+    出典: "scratch-vm の src/extensions/scratch3_pen/index.js（getInfo）",
+    版: "5.0.300",
+    確認した現行版: "2.1.19",
+    理由:
+      "拡張機能のブロック定義は scratch-blocks に無い。実行時に作られるため" +
+      "静的な定義を持たず、2026-09-02 の実測で pen_ は 0 件だった。" +
+      "scratch-vm は 24MB あり、この 10 件のために依存へ加えない",
+  },
+  {
+    表: "CORE_EXTENSIONS",
+    種別: "別出典",
+    出典: "scratch-vm の src/serialization/sb3.js（getExtensionIdForOpcode）",
+    版: "5.0.300",
+    確認した現行版: "2.1.19",
+    理由:
+      "opcode から拡張機能の id を導く規則と、拡張でない接頭辞の一覧。" +
+      "生成物の extensions を公式と同じ形で出すために要る",
+  },
+  {
+    表: "MENU_OPTIONS（pen_menu_colorParam のぶん）",
+    種別: "別出典",
+    出典: "scratch-l10n の editor/extensions/ja.json（pen.colorMenu.*）",
+    版: null,
+    確認した現行版: "2.1.19",
+    理由:
+      "scratchblocks の日本語辞書は拡張機能のメニューを持たない（2026-09-02 実測）。" +
+      "版を持たないのは、公式の翻訳が rolling で番号を振らないため",
+  },
+  {
     表: "SUPPLEMENT",
     種別: "手書き",
     出典: "各項目のコメント",

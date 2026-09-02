@@ -199,15 +199,20 @@ test("逆変換器が知らない opcode を、文の位置で落とさず印と
 })
 
 test("逆変換器が知る拡張機能のブロックは、印でなく記法として出る", async () => {
-  // 台帳が知らなくても逆変換器が知っていれば読める。この 88 件を印にしてしまうと、
-  // 読めているものを「読み取れない」と申告することになる
-  const bytes = await sb3With(withUnknownStatement("pen_penDown"))
+  // 台帳が知らなくても逆変換器が知っていれば読める。この 79 件を印にしてしまうと、
+  // 読めているものを「読み取れない」と申告することになる。ペンは台帳へ入れたので、
+  // ここでは扱わない拡張機能を使う。引数を持たない積むブロックはこれだけである
+  // （逆変換器が知る core 外の 79 件のうち、引数が無く値でもないもの）
+  const bytes = await sb3With(withUnknownStatement("microbit_displayClear"))
   const { targets, used } = await readSb3(bytes, "測定")
 
   const cat = spriteOf(targets)
-  assert.match(notationOf(cat), /ペンを下ろす/)
+  assert.match(notationOf(cat), /画面を消す/)
   assert.doesNotMatch(notationOf(cat), /読み取れない/)
-  assert.equal(used.find(item => item.opcode === "pen_penDown")?.coverage, COVERAGE.REVERSE_ONLY)
+  assert.equal(
+    used.find(item => item.opcode === "microbit_displayClear")?.coverage,
+    COVERAGE.REVERSE_ONLY,
+  )
 })
 
 test("台帳だけが知る opcode（sensing_online）が黙って消えない", async () => {
@@ -282,10 +287,10 @@ test("4 区分の件数が、台帳と allBlocks の被覆と一致する", () =
   // 版が動いたことを捕まえる。数え方を数の隣に書く ──「台帳が知る」は主の opcode と
   // alsoCovers を合わせたもので、台帳自身が「覆わない範囲」へ挙げるものは含めない
   assert.equal(reverse.size, 207, "逆変換器の表の件数が動いた")
-  assert.equal(known.size, 120, "台帳が知る opcode の件数が動いた")
-  assert.equal(both.length, 119, "双方が知る件数が動いた")
+  assert.equal(known.size, 129, "台帳が知る opcode の件数が動いた")
+  assert.equal(both.length, 128, "双方が知る件数が動いた")
   assert.equal(catalogOnly.length, 1, "台帳だけが知る件数が動いた")
-  assert.equal(reverseOnly.length, 88, "逆変換器だけが知る件数が動いた")
+  assert.equal(reverseOnly.length, 79, "逆変換器だけが知る件数が動いた")
 
   // 区分が重ならず、取りこぼしも無い
   assert.equal(both.length + catalogOnly.length, known.size)

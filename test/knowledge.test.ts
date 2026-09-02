@@ -65,13 +65,14 @@ const COVERAGE = {
   operators: 18,
   variables: 4,
   list: 11,
+  pen: 9,
 }
 
-test("解説が core 9 カテゴリを覆い、全ブロックを一覧に載せる", () => {
+test("解説が扱うカテゴリを覆い、全ブロックを一覧に載せる", () => {
   assert.deepEqual(
     CATEGORIES.map(c => c.key).sort(),
     Object.keys(COVERAGE).sort(),
-    "解説のカテゴリが 9 つでない",
+    "解説のカテゴリが台帳の扱う範囲と食い違う",
   )
 
   let total = 0
@@ -80,7 +81,7 @@ test("解説が core 9 カテゴリを覆い、全ブロックを一覧に載せ
     assert.equal(rows.length, count, `${category} の件数が合わない`)
     total += rows.length
   }
-  assert.equal(total, 119, "台帳 119 件が解説へ載っていない")
+  assert.equal(total, 128, "台帳 128 件が解説へ載っていない")
 })
 
 test("一覧の各行が記法と opcode と形と引数を持つ", () => {
@@ -249,7 +250,7 @@ test("覆わない範囲を群ごとに件数と一覧で申告する", async ()
   for (const label of Object.keys(catalog.raw.覆わない範囲)) {
     assert.ok(report.includes(`### ${label}`), `${label} の群が落ちている`)
   }
-  assert.match(report, /### core の外のカテゴリ（106 件）/)
+  assert.match(report, /### core の外のカテゴリ（93 件）/)
   assert.match(report, /### 日本語の綴りが衝突して記法から呼べないブロック（5 件）/)
 
   // 識別子を持たない項目も綴りで引ける形で残す
@@ -269,7 +270,7 @@ test("選択肢を一覧へ置ける長さの根拠を、台帳から数え直�
     .filter((arg: any) => arg.options)
     .map((arg: any) => choicesOf(arg).length)
 
-  assert.equal(lengths.length, 24, "選択肢を持つ引数の数が変わった")
+  assert.equal(lengths.length, 26, "選択肢を持つ引数の数が変わった")
 
   const over = lengths.filter(length => length > OPTIONS_INLINE_LIMIT)
   assert.equal(over.length, 3, "上限を超える選択肢の数が変わった")

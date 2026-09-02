@@ -135,7 +135,7 @@ test("台帳が古いと --check が終了コード 1 で止まる", async () =>
 test("追跡下のブロック解説が台帳と一致する", async () => {
   const { stdout } = await run(process.execPath, [CLI, "knowledge", "--check"])
   assert.match(stdout, /生成した層は最新/)
-  assert.match(stdout, /9 カテゴリ \/ ブロック 119 件/)
+  assert.match(stdout, /10 カテゴリ \/ ブロック 128 件/)
   assert.match(stdout, /定義のキー 11 個/)
 })
 
@@ -307,9 +307,10 @@ test("引数の書き方が台帳と噛み合わない記法を、行を示し�
 })
 
 test("解析器は知っていても台帳に無いブロックで止まる", async () => {
-  // 拡張機能（ペン）は本作業の非目標。記法としては成立するので、認識できない記述とは
-  // 別の枝で止まる。この枝を通る入力が無いと、片方の枝だけを見張ることになる
-  const dir = project("extension-block", "緑の旗が押されたとき\nペンを下ろす")
+  // 扱わない拡張機能（音楽）は記法としては成立するので、認識できない記述とは別の
+  // 枝で止まる。この枝を通る入力が無いと、片方の枝だけを見張ることになる。
+  // ペンは台帳へ入れたので、ここでは使えない
+  const dir = project("extension-block", "緑の旗が押されたとき\nテンポを (60) にする")
   const error = await run(process.execPath, [
     CLI, "build", dir, "--out", join(work, "extension-block.sb3"),
   ]).then(() => null, e => e)
@@ -317,7 +318,7 @@ test("解析器は知っていても台帳に無いブロックで止まる", as
   assert.ok(error, "台帳に無い拡張機能のブロックなのに成功している")
   assert.equal(error.code, 1)
   assert.match(error.stderr, /台帳に無いブロック/)
-  assert.match(error.stderr, /識別子 pen\.penDown が台帳に無い/)
+  assert.match(error.stderr, /識別子 music\.setTempo が台帳に無い/)
   assert.match(error.stderr, /main\.sbk:2 /)
 })
 

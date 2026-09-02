@@ -83,6 +83,47 @@ test("先頭のブロックだけが座標を持ち、スクリプトごとに�
   assert.ok(tops[1].y > tops[0].y, "2 本目のスクリプトが 1 本目に重なる")
 })
 
+/**
+ * スクリプトを 2 本置いたときの、2 本目の縦位置を返す。
+ *
+ * 1 段は 48。`serializeScripts` は「スクリプトの段数 + 余白」でずらすので、平らな形なら
+ * 帽子 1 + 中身 n の段数に余白が足された値が返る。
+ */
+async function secondY(script: string[]) {
+  const { blocks } = await serialize(
+    [...script, "", "このスプライトが押されたとき", "隠す"].join("\n"),
+  )
+  const tops = Object.values(blocks)
+    .filter(b => b.topLevel)
+    .sort((a, b) => a.y - b.y)
+  assert.equal(tops.length, 2, "測る前提が崩れている")
+  return tops[1].y
+}
+
+test("スクリプトの間に、帽子の高さを吸収する余白を空ける", async () => {
+  // 下の「差で測る」検査は、両辺に共通の余白が相殺するので余白の変化を捕まえない
+  // （2026-09-02 の第三者視点レビューが指摘し、+2 を +1 へ戻して 53 件全通過を実測）。
+  // ここは絶対値で測る。1 本目は帽子 1 段 + 動かす 1 段の 2 段ぶんを占める
+  const flat = await secondY(["緑の旗が押されたとき", "(10) 歩動かす"])
+  assert.equal(flat, 4 * 48, "2 段のスクリプトの下に、余白 2 段を空けていない")
+})
+
+test("中身を持つブロックは、閉じる腕のぶんも高さに数える", async () => {
+  // 「2 本目が 1 本目より下」だけを見ると、1px ずれていても通る。実機では中身を
+  // 持つスクリプトへ次の帽子が食い込んだ（2026-09-02）。平らな形との差で測る
+  const flat = await secondY(["緑の旗が押されたとき", "(10) 歩動かす"])
+  const nested = await secondY([
+    "緑の旗が押されたとき",
+    "ずっと",
+    "  (10) 歩動かす",
+    "end",
+  ])
+
+  // 中身を持つ形は、平らな形より「中身 1 段」と「閉じる腕 1 段」ぶん高い。
+  // 腕を数え落とすと差が 1 段に縮み、Scratch で次の帽子が重なる。1 段は 48
+  assert.equal(nested - flat, 2 * 48, "閉じる腕を高さに数えていない")
+})
+
 test("C 型の中身が SUBSTACK に入る", async () => {
   const { blocks, problems } = await serialize(
     ["ずっと", "  (10) 歩動かす", "end"].join("\n"),
@@ -180,6 +221,11 @@ test("メニューの影はブロックとして置き、欄名を入力名に�
  * 出典は scratch-blocks 0.1.0-prerelease.20221207082607 の `blocks_vertical/*.js`
  * （`field_dropdown` の `name`）。現行の 2.1.19 はメニューの定義が空で取れない。
  *
+ * 拡張機能はどちらにも無い。scratch-vm 5.0.300 の `src/engine/runtime.js`
+ * （`_buildMenuForScratchBlocks`）が `args0` の欄名を `menuName` そのものに置き、
+ * opcode を `<拡張の id>_menu_<menuName>` に組む。ペンの色のメニューは
+ * `scratch3_pen/index.js` が `colorParam` と名づけている。
+ *
  * 公式検証器は欄名を見ない（実測: 別名へ変えても通る）。往復検査は逆変換が欄を名前で
  * 引くため誤りを例外として捕まえるが、記法に現れたメニューしか通らない。この表は
  * 12 件すべてを、どの記法を書いたかに依らず見張る。
@@ -191,6 +237,7 @@ const MENU_FIELDS: Record<string, string> = {
   motion_glideto_menu: "TO",
   motion_goto_menu: "TO",
   motion_pointtowards_menu: "TOWARDS",
+  pen_menu_colorParam: "colorParam",
   sensing_distancetomenu: "DISTANCETOMENU",
   sensing_keyoptions: "KEY_OPTION",
   sensing_of_object_menu: "OBJECT",
@@ -204,13 +251,15 @@ test("メニューの影の欄名が、別の出典から抽出した表と一�
       .filter(arg => arg.shadow && !(arg.shadow in PRIMITIVES))
       .map(arg => ({ block: block.identifier, ...arg })),
   )
-  assert.equal(menus.length, 12, "メニューの影を持つ引数の数が変わった")
+  assert.equal(menus.length, 14, "メニューの影を持つ引数の数が変わった")
 
   for (const arg of menus) {
     const expected = MENU_FIELDS[String(arg.shadow)]
     assert.ok(expected, `${arg.shadow} が照合表に無い`)
-    // 規則は「欄名は入力名と同じ」。抽出した表がそれを裏づけるか
-    assert.equal(arg.name, expected, `${arg.block}.${arg.name} の影 ${arg.shadow}`)
+    // 実装は規則（欄名は入力名と同じ）で導き、規則から外れるものだけ台帳が
+    // `shadowField` に持つ。別の出典から抽出したこの表が、その導出を裏づけるか
+    const derived = arg.shadowField ?? arg.name
+    assert.equal(derived, expected, `${arg.block}.${arg.name} の影 ${arg.shadow}`)
   }
 })
 
@@ -221,6 +270,29 @@ test("ドロップダウンの日本語ラベルを内部値へ直す", async ()
   assert.deepEqual(problems, [])
   assert.deepEqual(find(blocks, "event_whenkeypressed").fields.KEY_OPTION, ["space", null])
   assert.deepEqual(find(blocks, "control_stop").fields.STOP_OPTION, ["all", null])
+})
+
+test("ペンの色は綴りの衝突を越えて現行のブロックへ落ちる", async () => {
+  // 「ペンの色を%1にする」は 2 つのブロックが持つ綴りで、解析器は旧ブロック
+  // （pen.setHue）を選ぶ。例外表がそれを現行の opcode へ読み替える。読み替えが
+  // 外れると、色を直に決めるブロックが記法から呼べなくなる
+  const { blocks, problems } = await serialize("ペンの色を [#ff0000] にする")
+  assert.deepEqual(problems, [])
+  const block = find(blocks, "pen_setPenColorToColor")
+  assert.deepEqual(block.inputs.COLOR, [1, [9, "#ff0000"]])
+})
+
+test("ペンの色の要素は数を取り、メニューの欄は menus の名前になる", async () => {
+  // 上流どうしが食い違う箇所。scratchblocks は第 2 引数を色と書くが、実装を持つ
+  // scratch-vm は数と宣言する。色のまま組むと Scratch が開けない
+  const { blocks, problems } = await serialize("ペンの [鮮やかさ v] を (50) にする")
+  assert.deepEqual(problems, [])
+  const block = find(blocks, "pen_setPenColorParamTo")
+  assert.deepEqual(block.inputs.VALUE, [1, [4, "50"]])
+
+  // 拡張機能のメニューは、欄の名前が入力名（COLOR_PARAM）と別に決まる
+  const menu = find(blocks, "pen_menu_colorParam")
+  assert.deepEqual(menu.fields, { colorParam: ["saturation", null] })
 })
 
 test("入力にブロックを差すと形 3 になり、下の影が既定値で残る", async () => {
@@ -622,7 +694,7 @@ test("数にドロップダウンが付く入力へブロックを差すのは�
 const OUTSIDE_CHECK = { "%b": 9 }
 
 /** 台帳の引数の総数。`alsoCovers` の引数を含めて数える */
-const CATALOG_ARGUMENTS = 128
+const CATALOG_ARGUMENTS = 135
 
 test("書き方を突き合わせない引数の件数が変わっていない", () => {
   const counted: Record<string, number> = {}

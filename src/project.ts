@@ -32,6 +32,7 @@ import {
 import { restored, unrestorable } from "./notation.ts"
 import { reasonOf } from "./errors.ts"
 import { defaultCostume } from "./costume.ts"
+import { extensionIdOf } from "../catalog/extensions.ts"
 import { lineFinder, readNotation } from "./parse.ts"
 import { serializeScripts } from "./serialize.ts"
 
@@ -158,8 +159,20 @@ export async function buildProject(
     )
   }
 
+  // 使ったブロックから拡張機能の申告を導く。並びは名前順にする（上流は現れた順に
+  // 並べるが、この環境は同じ入力から同じバイト列を出す約束を持つ）
+  const extensions = [
+    ...new Set(
+      targets.flatMap(entry =>
+        Object.values(entry.blocks as Record<string, { opcode?: unknown }>)
+          .map(block => extensionIdOf(String(block.opcode ?? "")))
+          .filter(id => id !== null),
+      ),
+    ),
+  ].sort()
+
   return {
-    project: { targets, meta: { ...META, agent: agentFor(catalog) } },
+    project: { targets, extensions, meta: { ...META, agent: agentFor(catalog) } },
     assets: [...assets].map(([name, bytes]) => ({ name, bytes })),
     problems,
   }

@@ -21,6 +21,7 @@ import { createHash } from "node:crypto"
 import { readFileSync } from "node:fs"
 import commands from "scratchblocks/syntax/commands.js"
 import { EXCEPTIONS } from "../catalog/exceptions.ts"
+import { CORE_EXTENSIONS, EXTENSION_DEFINITIONS } from "../catalog/extensions.ts"
 import {
   MENU_OPTIONS,
   NAME_KINDS,
@@ -35,7 +36,12 @@ import { PREFIXES, isKind, prefixOf } from "../src/notation.ts"
 
 const require = createRequire(import.meta.url)
 
-/** 本作業が扱う 9 カテゴリ。拡張機能は非目標 */
+/** 逆変換器の表。メニューの欄の名前（`remap`）をここから引く */
+const { allBlocks } = require("parse-sb3-blocks") as {
+  allBlocks: Record<string, { remap?: Record<string, string> }>
+}
+
+/** Scratch の core の 9 カテゴリ。拡張機能はここに入らない */
 export const CORE_CATEGORIES = [
   "motion",
   "looks",
@@ -48,8 +54,17 @@ export const CORE_CATEGORIES = [
   "list",
 ]
 
-/** core のブロックが持つ opcode の接頭辞。台帳から到達しない opcode を数えるのに使う */
-const CORE_PREFIXES = [
+/**
+ * 台帳が扱うカテゴリ。core の 9 つに、扱うと裁定した拡張機能を足したもの。
+ *
+ * core と分けてあるのは、2 つが別の問いに答えるためである。core は Scratch の
+ * 側が決めた区分で、こちらはこの環境が扱うと決めた範囲である。pen を足したのは
+ * TASK0024（線を引く手段が無いと絵を描く作品が作れないため）。
+ */
+export const LISTED_CATEGORIES = [...CORE_CATEGORIES, "pen"]
+
+/** 台帳が扱うブロックの opcode の接頭辞。台帳から到達しない opcode を数えるのに使う */
+const LISTED_PREFIXES = [
   "motion_",
   "looks_",
   "sound_",
@@ -58,12 +73,13 @@ const CORE_PREFIXES = [
   "sensing_",
   "operator_",
   "data_",
+  "pen_",
 ]
 
 /**
  * 例外表が取れる種別。ここに無い種別を黙って受け取ると、台帳から静かにブロックが落ちる
  */
-const KINDS = ["override", "option", "not-a-block", "legacy"]
+const KINDS = ["override", "option", "not-a-block", "legacy", "duplicate"]
 
 /**
  * 台帳の形は読む側（`src/catalog.ts`）が定義する。作る側で定義すると、読む側が形を知る
@@ -101,7 +117,10 @@ export function buildCatalog({
   catalog: Catalog
   problems: Problem[]
 } {
-  const { version: blocksVersion, definitions } = readDefinitions()
+  const { version: blocksVersion, definitions: core } = readDefinitions()
+  // 拡張機能の定義は scratch-blocks に無い（実測で `pen_` は 0 件）。別出典から
+  // 写したものを同じ列へ載せ、以降の照合を 1 本の道に保つ
+  const definitions = [...core, ...EXTENSION_DEFINITIONS]
   const byIdentifier = indexByIdentifier(definitions)
   const byOpcode = new Map(definitions.map(d => [d.opcode, d]))
   const known = new Set(byOpcode.keys())
@@ -112,10 +131,15 @@ export function buildCatalog({
   const used = new Set()
 
   const blocks: Entry[] = []
-  const excluded: Record<string, Excluded[]> = { option: [], "not-a-block": [], legacy: [] }
+  const excluded: Record<string, Excluded[]> = {
+    option: [],
+    "not-a-block": [],
+    legacy: [],
+    duplicate: [],
+  }
 
   for (const command of commands) {
-    if (!CORE_CATEGORIES.includes(command.category)) continue
+    if (!LISTED_CATEGORIES.includes(command.category)) continue
 
     const key = command.id ?? command.selector
     const exception = exceptions.get(key)
@@ -131,9 +155,8 @@ export function buildCatalog({
       continue
     }
 
-    const opcode = exception
-      ? exception.opcode
-      : resolve(command, byIdentifier, problems)
+    // 例外表は opcode を書かずに引数だけを直すことがある。書いていなければ導く
+    const opcode = exception?.opcode ?? resolve(command, byIdentifier, problems)
     if (!opcode) continue
 
     if (!byOpcode.has(opcode)) {
@@ -153,7 +176,8 @@ export function buildCatalog({
     const empty =
       definition.identifiers.length === 0 && definition.args.length === 0
 
-    const inputs = command.inputs ?? []
+    // 上流の定義が誤っているとき、例外表が引数の種別を差し替える
+    const inputs = exception?.inputs ?? command.inputs ?? []
     blocks.push({
       identifier: command.id,
       opcode,
@@ -168,7 +192,8 @@ export function buildCatalog({
       alsoCovers: (exception?.alsoCovers ?? []).map((covered: string) =>
         cover(covered, key, inputs, byOpcode, known, problems),
       ),
-      opcodeFrom: exception ? "例外表" : "定義",
+      // 引数だけを直す例外もあるので、opcode を書いた例外だけが出どころになる
+      opcodeFrom: exception?.opcode ? "例外表" : "定義",
     })
   }
 
@@ -240,7 +265,9 @@ function pair(opcode: string, key: string, inputs: string[], args: any[], known:
         detail: "欄か入力かを決められない",
       })
     }
-    if (arg.kind === "statement") return { ...arg, notation: null, shadow: null }
+    if (arg.kind === "statement") {
+      return { ...arg, notation: null, shadow: null, shadowField: null }
+    }
 
     const notation = inputs[slot]
     slot += 1
@@ -249,6 +276,8 @@ function pair(opcode: string, key: string, inputs: string[], args: any[], known:
       ...arg,
       notation,
       ...shadow,
+      // メニューの影が値を収める欄。規則（入力名と同じ）から外れるものだけ載せる
+      shadowField: shadow.shadow ? remappedField(opcode, arg.name) : null,
       ...optionsFor(opcode, key, arg, notation, shadow.shadow, problems),
     }
   })
@@ -441,11 +470,13 @@ function indexExceptions(table: any[], problems: Problem[]): Map<string, any> {
       })
       continue
     }
-    if (exception.kind === "override" && !exception.opcode) {
+    // override は定義の上書きである。opcode を直すものと引数の種別を直すものが
+    // あり、どちらも書いていなければ何も上書きしていない
+    if (exception.kind === "override" && !exception.opcode && !exception.inputs) {
       problems.push({
-        kind: "例外表に opcode が無い",
+        kind: "例外表が何も上書きしていない",
         subject: key,
-        detail: "kind=override は opcode を伴う",
+        detail: "kind=override は opcode か inputs のどちらかを伴う",
       })
       continue
     }
@@ -485,7 +516,7 @@ function uncovered(
 ): Record<string, ScopeEntry[]> {
   const outside = new Map()
   for (const command of commands) {
-    if (CORE_CATEGORIES.includes(command.category)) continue
+    if (LISTED_CATEGORIES.includes(command.category)) continue
     const bucket = outside.get(command.category) ?? []
     bucket.push(command.id ?? command.selector ?? command.spec)
     outside.set(command.category, bucket)
@@ -495,7 +526,7 @@ function uncovered(
     blocks.flatMap(b => [b.opcode, ...b.alsoCovers.map(c => c.opcode)]),
   )
   const unreached = definitions
-    .filter(d => CORE_PREFIXES.some(p => d.opcode.startsWith(p)))
+    .filter(d => LISTED_PREFIXES.some(p => d.opcode.startsWith(p)))
     .filter(d => !taken.has(d.opcode))
     .map(d => ({
       opcode: d.opcode,
@@ -509,7 +540,8 @@ function uncovered(
       .sort((a, b) => byName(a.category, b.category)),
     "ドロップダウンの選択肢": excluded.option,
     "ブロックでない記法": excluded["not-a-block"],
-    "Scratch 2 の記法": excluded.legacy,
+    "今の Scratch で置けない記法": excluded.legacy,
+    "綴りが衝突して呼べない記法": excluded.duplicate,
     "引数名を取れないブロック": blocks
       .filter(b => b.args === null)
       .map(b => ({ identifier: b.identifier, opcode: b.opcode })),
@@ -555,17 +587,43 @@ function version(name: string) {
  *
  * `exceptions` は組み立てに使った例外表
  */
+/**
+ * メニューの影が値を収める欄のうち、規則（欄の名前は入力名と同じ）から外れるものを引く。
+ *
+ * 規則から外れるのは拡張機能だけである。拡張のメニューは `menus` に書いた名前がそのまま
+ * 欄の名前になり、入力名とは別に決まる。逆変換器（`parse-sb3-blocks`）はこの対応を
+ * `remap` として持っており、2026-09-02 の実測では 25 件すべてが拡張機能のブロックだった
+ * （core は 1 件も持たない）。
+ *
+ * 依存に在るものから引くので写しではない。上流が版を上げれば台帳の差分に出る。
+ */
+function remappedField(opcode: string, name: string): string | null {
+  const remap = allBlocks[opcode]?.remap
+  return remap?.[name] ?? null
+}
+
+/**
+ * 指紋が畳む手書きの表。`EXCEPTIONS` は検査が差し替えるので引数で受け、ここには置かない。
+ *
+ * **手書きの表を足したらここへも足す。** 足し忘れると、その表を直しても台帳の版が動かず
+ * `catalogDrift` が沈黙する。2026-09-02 の第三者視点レビューで実際に 3 表が漏れており、
+ * 生成物の「表の出典」が申告する生成元と指紋が写す生成元が食い違っていた。
+ * 取りこぼしは `test/catalog.test.ts` が名前の一覧で見張る。
+ */
+export const FINGERPRINTED = {
+  MENU_OPTIONS,
+  NAME_KINDS,
+  OPTIONS,
+  SUPPLEMENT,
+  FALLBACK,
+  PRIMITIVES,
+  SHADOWS,
+  EXTENSION_DEFINITIONS,
+  CORE_EXTENSIONS,
+}
+
 function handwrittenFingerprint(exceptions: typeof EXCEPTIONS): string {
-  const tables = {
-    EXCEPTIONS: exceptions,
-    MENU_OPTIONS,
-    NAME_KINDS,
-    OPTIONS,
-    SUPPLEMENT,
-    FALLBACK,
-    PRIMITIVES,
-    SHADOWS,
-  }
+  const tables = { EXCEPTIONS: exceptions, ...FINGERPRINTED }
   return createHash("sha256").update(JSON.stringify(tables)).digest("hex").slice(0, 12)
 }
 

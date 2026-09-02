@@ -232,7 +232,9 @@ export function serializeScripts(doc: any, context: { catalog: LoadedCatalog, na
   let y = 0
   for (const script of doc.scripts) {
     emitStack(script.blocks, ctx, { parent: null, topLevel: true, x: 0, y })
-    y += (rows(script.blocks) + 1) * ROW
+    // 帽子は通常のブロックより高く、ブロックの間にも隙間が空く。1 段ぶんの余白では
+    // 足りずに次の帽子が触れるので、2 段ぶん空ける
+    y += (rows(script.blocks) + 2) * ROW
   }
   return { blocks: state.blocks, problems: state.problems }
 }
@@ -347,7 +349,7 @@ function emitBlock(block: any, ctx: Ctx, place: { parent: string | null, topLeve
  * 記法が引数を並べる順を、英語の記法の `%1 %2` の順へ直す表を作る。
  *
  * 日本語のラベルは語順が違い、引数を入れ替えて並べるものがある（`%2 の %1 番目` 等。
- * 台帳の 119 件のうち 8 件）。台帳の引数は英語の順に並ぶため、表示の順で素朴に
+ * 台帳の 128 件のうち 8 件）。台帳の引数は英語の順に並ぶため、表示の順で素朴に
  * 対応させると隣の引数へ値が入る。
  *
  * この誤りは下流のどの検査にも掛からない。公式検証は構造しか見ず、往復検査は
@@ -781,7 +783,10 @@ function shadowFor(arg: CatalogArgument, value: string, ctx: Ctx, parent: string
  */
 function fieldNameOf(arg: CatalogArgument) {
   const primitive = lookup(PRIMITIVES, arg.shadow)
-  return primitive ? primitive[1] : arg.name
+  if (primitive) return primitive[1]
+  // メニューの影は規則（欄の名前は入力名と同じ）で決まる。規則から外れるものだけ
+  // 台帳が持つ。拡張機能のメニューは欄の名前が入力名と別に決まる
+  return arg.shadowField ?? arg.name
 }
 
 /**
@@ -928,7 +933,7 @@ function kindOfPrimitive(opcode: string) {
  * 生成物の側の綴りで、記法を書く人はどこにも見ていない。ブロック解説の一覧が同じ番号で
  * 引数を示すので、申告から一覧を引ける。
  *
- * 番号だけでは足りない。日本語のラベルは語順を入れ替えるものがあり（台帳 119 件のうち
+ * 番号だけでは足りない。日本語のラベルは語順を入れ替えるものがあり（台帳 128 件のうち
  * 8 件）、そこでは書き手の行の左から 2 つ目が `%1` になる。番号を引くのに一覧を開く
  * ことになるので、書かれた綴りを添えて行の中で見つけられるようにする。
  */
@@ -950,7 +955,9 @@ function rows(blocks: any[]) {
   for (const block of blocks) {
     count += 1
     for (const child of block.children ?? []) {
-      if (child.isScript) count += rows(child.blocks)
+      // 中身のほかに、下で閉じる腕のぶんの高さを数える。数え落とすと、中身を持つ
+      // ブロックのあるスクリプトへ次の帽子が食い込む（2026-09-02 に実機で出た）
+      if (child.isScript) count += rows(child.blocks) + 1
     }
   }
   return count

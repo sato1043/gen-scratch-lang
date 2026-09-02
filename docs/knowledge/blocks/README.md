@@ -1,7 +1,8 @@
 ブロック解説
 ============
 
-Scratch の core 9 カテゴリのブロックを、カテゴリごとに解説する。各ページは
+Scratch のブロックを、カテゴリごとに解説する。扱うのは core の 9 カテゴリと、
+扱うと裁定した拡張機能（ペン）である。各ページは
 2 層でできている。カテゴリが何をするかの説明は人が書き、それ以外は台帳から生成する。
 一覧を手で書くと台帳と二重管理になるためである。
 
@@ -20,6 +21,7 @@ Scratch の core 9 カテゴリのブロックを、カテゴリごとに解説�
 | [演算](operators.md) | 四則・比較・論理・文字列・乱数 |
 | [変数](variables.md) | 1 つの値を覚える |
 | [リスト](list.md) | 並んだ値を覚える |
+| [ペン](pen.md) | 線を引く・スタンプ |
 
 一覧を組み立て直して差分が無いことを確かめるには、リポジトリの根で次を実行する。
 
@@ -33,7 +35,7 @@ node src/cli.ts knowledge --check
 ここに挙げたものは解説が扱わない。0 件を装わず、群ごとに件数と一覧を残す。
 
 <!-- 台帳から生成: ここから -->
-### core の外のカテゴリ（106 件）
+### core の外のカテゴリ（93 件）
 
 - `boost`: 12 件
 - `ev3`: 11 件
@@ -44,7 +46,6 @@ node src/cli.ts knowledge --check
 - `microbit`: 10 件
 - `music`: 7 件
 - `obsolete`: 10 件
-- `pen`: 13 件
 - `translate`: 2 件
 - `tts`: 3 件
 - `video`: 4 件
@@ -61,11 +62,18 @@ node src/cli.ts knowledge --check
 - `CONTROL_ELSE` — ブロックでなく記法の部品。C 型ブロックの中身を 2 つに割る綴りで、解析の時点で「もし〜なら」へ吸収され、独立したブロックとしては現れない
 - `scratchblocks:end` — ブロックでなく記法の部品。C 型ブロックの終わりを示す綴りで、解析の時点で閉じ役として消費される
 
-### Scratch 2 の記法（3 件）
+### 今の Scratch で置けない記法（6 件）
 
 - `go to front` — Scratch 2 の記法。3.0 では looks_gotofrontback が前面と背面を選択肢で兼ねる
 - `go back %1 layers` — Scratch 2 の記法。3.0 では looks_goforwardbackwardlayers が前後を選択肢で兼ねる
 - `set tempo to %1 bpm` — Scratch 2 の記法。3.0 ではテンポは音楽の拡張機能へ移った
+- `pen.changeHue` — Scratch 3 のパレットに出ない（scratch-vm が hideFromPalette を付ける）。色相を 0〜100 の数で動かす Scratch 2 由来の指定で、3.0 では pen_changePenColorParamBy が色・鮮やかさ・明るさ・透明度を選択肢で兼ねる
+- `pen.changeShade` — Scratch 3 のパレットに出ない（scratch-vm が hideFromPalette を付ける）。濃さは 3.0 の色の指定に無い概念で、明るさへ置き換わった
+- `pen.setShade` — Scratch 3 のパレットに出ない（scratch-vm が hideFromPalette を付ける）。濃さは 3.0 の色の指定に無い概念で、明るさへ置き換わった
+
+### 綴りが衝突して呼べない記法（1 件）
+
+- `pen.setColor` — 日本語の綴り「ペンの色を%1にする」が pen.setHue と重なり、解析器は pen.setHue を選ぶ。同じ opcode（pen_setPenColorToColor）はそちらの綴りから呼べるため、こちらは台帳に置かない。置くと opcode が 2 度現れる
 
 ### 引数名を取れないブロック（2 件）
 
@@ -78,7 +86,7 @@ node src/cli.ts knowledge --check
 - `LOOKS_SWITCHBACKDROPTOANDWAIT` の入力 `BACKDROP`
 - `CONTROL_STOP` の入力 `STOP_OPTION`
 
-### 影ブロックを規則で補った入力（24 件）
+### 影ブロックを規則で補った入力（29 件）
 
 - `MOTION_GOTOXY` の入力 `X`（影は `math_number`）
 - `MOTION_GOTOXY` の入力 `Y`（影は `math_number`）
@@ -92,6 +100,11 @@ node src/cli.ts knowledge --check
 - `LOOKS_THINKFORSECS` の入力 `MESSAGE`（影は `text`）
 - `LOOKS_THINKFORSECS` の入力 `SECS`（影は `math_number`）
 - `LOOKS_THINK` の入力 `MESSAGE`（影は `text`）
+- `pen.setColorParam` の入力 `VALUE`（影は `math_number`）
+- `pen.changeColorParam` の入力 `VALUE`（影は `math_number`）
+- `pen.setHue` の入力 `COLOR`（影は `colour_picker`）
+- `pen.changeSize` の入力 `SIZE`（影は `math_number`）
+- `pen.setSize` の入力 `SIZE`（影は `math_number`）
 - `SENSING_ASKANDWAIT` の入力 `QUESTION`（影は `text`）
 - `DATA_SETVARIABLETO` の入力 `VALUE`（影は `text`）
 - `DATA_CHANGEVARIABLEBY` の入力 `VALUE`（影は `math_number`）
@@ -105,7 +118,7 @@ node src/cli.ts knowledge --check
 - `DATA_ITEMNUMOFLIST` の入力 `ITEM`（影は `text`）
 - `DATA_LISTCONTAINSITEM` の入力 `ITEM`（影は `text`）
 
-### 台帳から到達しない opcode（34 件）
+### 台帳から到達しない opcode（35 件）
 
 - `control_all_at_once`
 - `control_clear_counter`
@@ -134,6 +147,7 @@ node src/cli.ts knowledge --check
 - `motion_scroll_up`
 - `motion_xscroll`
 - `motion_yscroll`
+- `pen_menu_colorParam`
 - `sensing_distancetomenu`
 - `sensing_keyoptions`
 - `sensing_loud`
