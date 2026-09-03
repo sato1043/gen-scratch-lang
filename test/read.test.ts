@@ -1,15 +1,21 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { readFileSync } from "node:fs"
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { createRequire } from "node:module"
 import JSZip from "jszip"
+import { buildProject } from "../src/project.ts"
+import { packSb3 } from "../src/sb3.ts"
 import { CATALOG_KEYS } from "../src/catalog.ts"
+import { PROCEDURE_OPCODES } from "../catalog/procedures.ts"
 import { catalogOrStop, detailOf, ourSb3, spriteOf, stageOf } from "./fixtures.ts"
 import {
   COVERAGE,
   catalogOpcodes,
   censusOf,
   coveragePartition,
+  definitionOf,
   markedBlocks,
   readSb3,
   type Reading,
@@ -287,14 +293,22 @@ test("4 区分の件数が、台帳と allBlocks の被覆と一致する", () =
   // 版が動いたことを捕まえる。数え方を数の隣に書く ──「台帳が知る」は主の opcode と
   // alsoCovers を合わせたもので、台帳自身が「覆わない範囲」へ挙げるものは含めない
   assert.equal(reverse.size, 207, "逆変換器の表の件数が動いた")
-  assert.equal(known.size, 129, "台帳が知る opcode の件数が動いた")
-  assert.equal(both.length, 128, "双方が知る件数が動いた")
-  assert.equal(catalogOnly.length, 1, "台帳だけが知る件数が動いた")
-  assert.equal(reverseOnly.length, 79, "逆変換器だけが知る件数が動いた")
-
-  // 区分が重ならず、取りこぼしも無い
+  // 区分が重ならず、取りこぼしも無い。件数を固定する前に置く ── 後に置くと、固定した
+  // 数どうしの算術になって恒真になり、どんな状態でも落ちない
   assert.equal(both.length + catalogOnly.length, known.size)
   assert.equal(both.length + reverseOnly.length, reverse.size)
+
+  // ブロック定義を通して 3 件増えた。3 件とも逆変換器の表にも在るので、増分はすべて
+  // 「双方が知る」へ入る。件数だけでは入れ替わり（1 件が抜けて別の 1 件が入る）が
+  // 差し引き 0 で通るため、顔ぶれを名指しで見る
+  for (const opcode of PROCEDURE_OPCODES) {
+    assert.ok(both.includes(opcode), `${opcode} が双方の知る側に無い`)
+  }
+
+  assert.equal(known.size, 132, "台帳が知る opcode の件数が動いた")
+  assert.equal(both.length, 131, "双方が知る件数が動いた")
+  assert.equal(catalogOnly.length, 1, "台帳だけが知る件数が動いた")
+  assert.equal(reverseOnly.length, 76, "逆変換器だけが知る件数が動いた")
   assert.deepEqual(catalogOnly, ["sensing_online"])
 })
 
@@ -1228,4 +1242,114 @@ test("印の綴りが記法の言語に従う", async () => {
   const 行数 = (text: string) => text.split("\n").length
   assert.equal(行数(記法(英語)), 行数(記法(日本語)), "行数が変わった")
   assert.match(記法(英語), new RegExp(`// [^:]+: ${UNKNOWN}`), "英語の記法に印が無い")
+})
+
+test("画面を再描画しない指定が、読み取りで作品の定義へ戻る", async () => {
+  // 記法はこの指定を表せない。読み取りが作品定義の側へ移さないと、往復で黙って消える
+  // （消えても .sb3 は成立するので、遅くなったことでしか気づけない）
+  const dir = mkdtempSync(join(tmpdir(), "gen-scratch-warp-"))
+  writeFileSync(
+    join(dir, "project.yaml"),
+    [
+      "名前: ためし",
+      "スプライト:",
+      "  - 名前: ネコ",
+      "    スクリプト: neko.sbk",
+      "    再描画しないブロック:",
+      "      - しかくをかく (へん)",
+    ].join("\n"),
+  )
+  writeFileSync(
+    join(dir, "neko.sbk"),
+    [
+      "定義 しかくをかく (へん)",
+      "(へん) 歩動かす",
+      "",
+      "定義 まつ",
+      "(1) 秒待つ",
+      "",
+      "緑の旗が押されたとき",
+      "しかくをかく (120)",
+    ].join("\n"),
+  )
+
+  const { project, assets, problems: built } = await buildProject(dir)
+  assert.deepEqual(built, [], "入力を組み立てられない")
+
+  const reading = await readSb3(await packSb3({ project, assets }), "測定")
+  assert.deepEqual(reading.problems, [])
+
+  const restored = definitionOf(reading, "ためし") as {
+    スプライト: { 再描画しないブロック?: string[] }[]
+  }
+  const [neko] = restored.スプライト
+
+  // 挙げたものだけが戻る。全部を挙げる実装でも緑にならないよう、挙げていない `まつ` が
+  // 混ざっていないことまで見る
+  assert.deepEqual(neko.再描画しないブロック, ["しかくをかく (引数1)"])
+
+  // 内部の綴りでは戻さない。`%s` は Scratch の画面にも記法にも現れないので、書き戻された
+  // 定義を利用者が読んでも記法と結び付けられない
+  assert.doesNotMatch(JSON.stringify(restored), /%s/)
+
+  // 戻した綴りを組み立て側へ入れ直すところまで見る。読み取りが出す形と組み立てが
+  // 受ける形は別々に書いてあるので、片方だけ変えると往復が黙って開く
+  writeFileSync(
+    join(dir, "project.yaml"),
+    [
+      "名前: ためし",
+      "スプライト:",
+      "  - 名前: ネコ",
+      "    スクリプト: neko.sbk",
+      "    再描画しないブロック:",
+      `      - ${neko.再描画しないブロック[0]}`,
+    ].join("\n"),
+  )
+  const again = await buildProject(dir)
+  assert.deepEqual(again.problems, [], "読み取りが出した綴りを組み立てが受けない")
+  const blocks: Record<string, { mutation?: { proccode?: string, warp?: string } }> =
+    again.project.targets[1].blocks
+  const warps = Object.values(blocks)
+    .filter(block => block.mutation?.proccode === "しかくをかく %s")
+    .map(block => block.mutation?.warp)
+  assert.deepEqual(warps, ["true", "true"], "入れ直した綴りで指定が効いていない")
+})
+
+test("再描画しないブロックの綴りが、記法と同じ守りを通る", async () => {
+  // 他人の .sb3 から来た綴りを作品定義へ書く経路である。記法の側は `spelled` を
+  // 通っているので、こちらだけ素通しにすると、同じ 1 回の読み取りが書く 2 つの
+  // 成果物で守りが割れる（CP6 で実測。生の U+202E が project.yaml へ出た）
+  const nasty = `わな${String.fromCharCode(0x202e)}${String.fromCharCode(0x200b)}`
+  const blocks = {
+    d: {
+      opcode: "procedures_definition", next: null, parent: null,
+      inputs: { custom_block: [1, "p"] }, fields: {}, shadow: false, topLevel: true, x: 0, y: 0,
+    },
+    p: {
+      opcode: "procedures_prototype", next: null, parent: "d", inputs: {}, fields: {},
+      shadow: true, topLevel: false,
+      mutation: {
+        tagName: "mutation", children: [], proccode: nasty,
+        argumentids: "[]", argumentnames: "[]", argumentdefaults: "[]", warp: "true",
+      },
+    },
+  }
+  const reading = await readSb3(await sb3With(blocks), "測定")
+  assert.deepEqual(reading.problems, [])
+
+  const restored = definitionOf(reading, "ためし") as {
+    スプライト: { 再描画しないブロック?: string[] }[]
+  }
+  const [got] = restored.スプライト[0].再描画しないブロック ?? []
+  assert.ok(got !== undefined, "再描画しないブロックが書き出されていない")
+
+  // 実害を最初に見る。生の制御文字が 1 文字でも残ると、作品定義を grep や
+  // git diff で読めなくなる
+  assert.deepEqual(
+    [...got].filter(c => c.codePointAt(0)! < 32 || /\p{Cf}/u.test(c)),
+    [],
+    `生の制御文字が残っている: ${JSON.stringify(got)}`,
+  )
+  // 印になっていることまで見る。落としてしまうと制御文字は消えるが往復も閉じない
+  assert.match(got, /⟪U\+202E⟫/, `印になっていない: ${JSON.stringify(got)}`)
 })

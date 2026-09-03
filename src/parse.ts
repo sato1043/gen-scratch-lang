@@ -19,7 +19,25 @@ export const LANGUAGES = ["ja", "en"]
  */
 export async function parseNotation(code: string): Promise<any> {
   const { sb } = await loadScratchblocks()
-  return sb.parse(code, { languages: LANGUAGES })
+  return sb.parse(withoutCarriageReturns(code), { languages: LANGUAGES })
+}
+
+/**
+ * 行末の復帰文字を落とす。
+ *
+ * 解析器は改行だけを行の区切りにするので、`CRLF` で書かれた記法では復帰文字が行の
+ * 中身へ残る。ブロック定義では綴り（`proccode`）の末尾へ入り、**画面に見えない文字が
+ * 名前の一部になる**（実測 2026-09-04: `"えがく %s "` の後ろに復帰文字が付いた）。
+ * しかも `CRLF` と `LF` が混ざった記法では申告が 0 件で通る。
+ *
+ * Windows のエディタは `CRLF` が既定で、追跡下のファイルを守る `.gitattributes` は
+ * 利用者が手で書く記法に及ばない。
+ *
+ * 落とすのは**行の区切りとしての復帰文字だけ**である。値の中の復帰文字は印
+ * （`⟪U+000D⟫`）で書くので、この置換に当たらない。
+ */
+function withoutCarriageReturns(code: string): string {
+  return code.replace(/\r\n/g, "\n")
 }
 
 /**

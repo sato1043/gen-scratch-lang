@@ -36,7 +36,7 @@ function names({ variable = [], list = [] }: { variable?: string[], list?: strin
  */
 async function serialize(code: string, declared?: { variable?: string[], list?: string[] }) {
   const doc = await parseNotation(code)
-  return serializeScripts(doc, { catalog, names: names(declared) })
+  return serializeScripts(doc, { catalog, names: names(declared), warped: [] })
 }
 
 /** 影でないブロックを opcode で引く */
@@ -693,7 +693,12 @@ test("数にドロップダウンが付く入力へブロックを差すのは�
  */
 const OUTSIDE_CHECK = { "%b": 9 }
 
-/** 台帳の引数の総数。`alsoCovers` の引数を含めて数える */
+/**
+ * 台帳の引数の総数。`alsoCovers` の引数を含めて数える。
+ *
+ * ブロック定義を通しても動かない。3 件とも `args: null`（引数を解けない）で置くため、
+ * 下の走査が 1 つも数えない。台帳へ載ることと、引数が解けることは別である。
+ */
 const CATALOG_ARGUMENTS = 135
 
 test("書き方を突き合わせない引数の件数が変わっていない", () => {
@@ -809,5 +814,5 @@ test("台帳が原型の名前を綴りに持っても、投げずに済ませ�
   const doc = await parseNotation("(10) 歩動かす")
   const broken = loadCatalog(path)
   // 投げないことがこの検査の主張。中身の正しさは問わない
-  assert.doesNotThrow(() => serializeScripts(doc, { catalog: broken, names: names() }))
+  assert.doesNotThrow(() => serializeScripts(doc, { catalog: broken, names: names(), warped: [] }))
 })

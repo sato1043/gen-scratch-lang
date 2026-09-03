@@ -12,6 +12,8 @@ import {
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import JSZip from "jszip"
+import { projectJsonIn } from "./fixtures.ts"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 
@@ -135,8 +137,8 @@ test("台帳が古いと --check が終了コード 1 で止まる", async () =>
 test("追跡下のブロック解説が台帳と一致する", async () => {
   const { stdout } = await run(process.execPath, [CLI, "knowledge", "--check"])
   assert.match(stdout, /生成した層は最新/)
-  assert.match(stdout, /10 カテゴリ \/ ブロック 128 件/)
-  assert.match(stdout, /定義のキー 11 個/)
+  assert.match(stdout, /12 カテゴリ \/ ブロック 131 件/)
+  assert.match(stdout, /定義のキー 12 個/)
 })
 
 test("解説が古いと --check が終了コード 1 で止まる", async () => {
@@ -320,6 +322,60 @@ test("解析器は知っていても台帳に無いブロックで止まる", as
   assert.match(error.stderr, /台帳に無いブロック/)
   assert.match(error.stderr, /識別子 music\.setTempo が台帳に無い/)
   assert.match(error.stderr, /main\.sbk:2 /)
+})
+
+test("引数を取らないブロック定義は、言葉から .sb3 になる", async () => {
+  const dir = project(
+    "custom-block",
+    "定義 えがく\n(10) 歩動かす\n\n緑の旗が押されたとき\nえがく",
+  )
+  const out = join(work, "custom-block.sb3")
+  await run(process.execPath, [CLI, "build", dir, "--out", out])
+
+  // 定義と呼び出しが同じ綴りを名乗ることを見る。食い違うと Scratch は別のブロックと
+  // して扱い、呼んでも何も起きない .sb3 が公式検証器を通ってしまう
+  const zip = await JSZip.loadAsync(readFileSync(out))
+  const { project: json } = await projectJsonIn(zip)
+  const sprite = json.targets.find((t: any) => !t.isStage)
+  const blocks: any[] = Object.values(sprite.blocks)
+  const spells = blocks
+    .filter(b => b.mutation)
+    .map(b => `${b.opcode}:${b.mutation.proccode}:${b.mutation.warp}`)
+  assert.deepEqual(spells.sort(), [
+    "procedures_call:えがく:false",
+    "procedures_prototype:えがく:false",
+  ])
+})
+
+test("引数を取るブロック定義は、定義と呼び出しを同じ ID で結ぶ", async () => {
+  const dir = project(
+    "custom-block-args",
+    "定義 かべをかく (きょり)\n(きょり) 歩動かす\n\n緑の旗が押されたとき\nかべをかく (50)",
+  )
+  const out = join(work, "custom-block-args.sb3")
+  await run(process.execPath, [CLI, "build", dir, "--out", out])
+
+  const zip = await JSZip.loadAsync(readFileSync(out))
+  const { project: json } = await projectJsonIn(zip)
+  const sprite = json.targets.find((t: any) => !t.isStage)
+  const blocks: any[] = Object.values(sprite.blocks)
+
+  // 定義と呼び出しが同じ引数 ID を使うことを見る。別々に採ると Scratch は既定値を
+  // 使い、呼び出しに書いた値が黙って消える（公式検証器は構造しか見ないので通る）
+  const prototype = blocks.find(b => b.opcode === "procedures_prototype")
+  const call = blocks.find(b => b.opcode === "procedures_call")
+  const ids = JSON.parse(prototype.mutation.argumentids)
+  assert.equal(ids.length, 1, "引数が 1 つ宣言されていない")
+  assert.deepEqual(Object.keys(prototype.inputs), ids, "定義が宣言した ID に値の口が無い")
+  assert.deepEqual(Object.keys(call.inputs), ids, "呼び出しが定義と違う ID を使っている")
+  assert.equal(call.inputs[ids[0]][1][1], "50", "呼び出しに書いた値が入っていない")
+
+  // 引数の名前は定義の側が持つ。本体の参照も同じ綴りでなければ、実行時に空になる
+  assert.deepEqual(JSON.parse(prototype.mutation.argumentnames), ["きょり"])
+  const referenced = blocks
+    .filter(b => b.opcode === "argument_reporter_string_number")
+    .map(b => b.fields.VALUE[0])
+  assert.deepEqual(referenced, ["きょり", "きょり"], "宣言と参照の綴りが違う")
 })
 
 test("宣言の無い変数を含む作品も終了コード 1 で止まる", async () => {

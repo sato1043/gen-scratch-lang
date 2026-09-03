@@ -13,6 +13,7 @@
  * | 2 | 影が無い（真偽・C 型の中身）| `[2, ブロック]` |
  * | 3 | 両方あって別（影を覆うブロック）| `[3, ブロック, 影]` |
  */
+import { createHash } from "node:crypto"
 import { PRIMITIVES } from "../catalog/shadows.ts"
 import {
   CATALOG_KEYS,
@@ -160,6 +161,14 @@ type ArgShape = {
   options?: CatalogArgument["options"]
 }
 
+/**
+ * 記法の子のうち、引数かどうかを見分けるのに要る印。
+ *
+ * 値を書いた子（`(1)`・`[あか]`）は `isInput`、ブロックを差した子（変数・演算）は
+ * `isBlock` を持つ。両方が引数になりうるので、どちらかを持てば引数として数える。
+ */
+type Child = { isInput?: boolean, isBlock?: boolean }
+
 /** 申告が指す引数の置き場 */
 type Site = {
   /** 引数を持つブロックの記法 */
@@ -207,6 +216,8 @@ type Ctx = SharedLabels &
     state: State
     nextId: () => string
     nextBlockIndex: () => number
+    /** 画面を再描画しないブロック定義の綴り。作品定義が挙げる */
+    warped: Set<string>
   }
 
 /**
@@ -216,10 +227,17 @@ type Ctx = SharedLabels &
  *
  * `doc` はscratchblocks の Document
  */
-export function serializeScripts(doc: any, context: { catalog: LoadedCatalog, names: Names }): { blocks: Record<string, any>, problems: Problem[] } {
+export function serializeScripts(
+  doc: any,
+  // `warped` は省けない。省けると、渡し忘れが「どの定義も再描画する」へ黙って倒れる
+  // ── 生成物は成立し検証器も通るので、遅くなったことでしか気づけない。指定が無い
+  // ことを言いたい呼び出しは空の並びを渡す（CP6 の保守性・設計原則が指摘）
+  context: { catalog: LoadedCatalog, names: Names, warped: string[] },
+): { blocks: Record<string, any>, problems: Problem[] } {
   const state: State = { blocks: {}, problems: [], count: 0, seenBlocks: 0 }
   const ctx: Ctx = {
     ...context,
+    warped: new Set(context.warped),
     state,
     sharedLabels: sharedLabelsOf(context.catalog),
     nextId: () => `b${(state.count += 1)}`,
@@ -271,6 +289,13 @@ function emitBlock(block: any, ctx: Ctx, place: { parent: string | null, topLeve
   const blockIndex = ctx.nextBlockIndex()
   const identifier = block.info?.id
 
+  // ブロック定義は台帳の引き当てを通らない。綴りも引数の数も利用者が決めるので、
+  // 「識別子 → opcode + 引数」の対応表に収まらない
+  const category = String(block.info?.category ?? "")
+  if (category === "custom" || category === "custom-arg") {
+    return emitCustomBlock(block, ctx, place, blockIndex, label)
+  }
+
   if (!identifier) {
     // 変数とリストのレポーターは識別子を持たない。値として使うぶんは原始値へ畳むが、
     // 単独でスクリプトの先頭に置かれた場合はここへ来る
@@ -298,10 +323,28 @@ function emitBlock(block: any, ctx: Ctx, place: { parent: string | null, topLeve
     return null
   }
 
+  // 引数を解けない項は、台帳に載っていても記法から組み立てられない。先に見ないと
+  // 下の枝が「中身の数が合わない」と申告し、中身を書いていない利用者を誤誘導する
+  if (entry.args === null && (entry.alsoCovers ?? []).length === 0) {
+    ctx.fail({
+      kind: "台帳が引数を解けないブロック",
+      subject: label,
+      where: label,
+      blockIndex,
+      detail:
+        `${identifier} は台帳に載っているが引数を解けない。` +
+        `記法からは書けない（覆わない範囲の「引数名を取れないブロック」を参照）`,
+    })
+    return null
+  }
+
   const children = block.children ?? []
   const scripts = children.filter((child: any) => child.isScript)
   const variant = variantFor(entry, scripts.length)
   if (!variant) {
+    // 記法からは到達しない。中身の数が合わないのは引数を解けない項だけで、それは
+    // 上の枝が先に捕まえる（2026-09-03 に測った）。`alsoCovers` が増えて中身の数の
+    // 種類が変わったときの備えとして残す
     ctx.fail({
       kind: "中身の数に合う opcode が無い",
       subject: label,
@@ -343,6 +386,391 @@ function emitBlock(block: any, ctx: Ctx, place: { parent: string | null, topLeve
 
   fill(variant, arrange(given, order), scripts, ctx, id, label, blockIndex)
   return id
+}
+
+/**
+ * ブロック定義とその呼び出しを直列化する。
+ *
+ * 台帳を引かない。綴りと引数の数を利用者が決めるので、「識別子 → opcode + 引数」の
+ * 対応表に収まらない ── 台帳が持つのは opcode と、引数を利用者が決めるという申告だけ
+ * である。
+ *
+ * 綴りと引数名は解析器が決めた値（`info.call` / `info.names`）から取る。定義と
+ * 呼び出しを結ぶのはこの綴りだけなので、両側で別々に組み直すと結び付かない。
+ */
+function emitCustomBlock(
+  block: any,
+  ctx: Ctx,
+  place: { parent: string | null, topLevel: boolean, x?: number, y?: number },
+  blockIndex: number,
+  label: string,
+): string | null {
+  const info = block.info ?? {}
+  const children = block.children ?? []
+
+  if (info.shape === "define-hat") {
+    // 綴りと引数名は解析器が既に決めている（`info.call` / `info.names`）。子から
+    // 組み直すと、解析器が定義と呼び出しを結ぶのに使った正規化（大小・空白・記号）を
+    // こちらが持たないぶんだけ綴りが割れる。実測 2026-09-03: `定義 Draw (n)` と
+    // `draw (5)` を解析器は結ぶが、組み直した綴りは割れて呼び出しが死んだ
+    return emitDefinition(block, ctx, place, blockIndex, label)
+  }
+
+  if (info.id === "PROCEDURES_CALL") {
+    return emitCall(block, ctx, place, blockIndex, label)
+  }
+
+  if (info.selector === "getParam") {
+    const name = textOf(children[0])
+    if (name === undefined || name === "") {
+      ctx.fail({
+        kind: "ブロック定義の形が読めない",
+        subject: label,
+        where: label,
+        blockIndex,
+        detail: "引数の名前を読めない",
+      })
+      return null
+    }
+    const id = ctx.nextId()
+    // 定義の側で宣言した名前をそのまま持つ。Scratch は名前で引数を引くので、
+    // 定義と綴りが違うと実行時に空の値になる
+    ctx.state.blocks[id] = {
+      opcode: "argument_reporter_string_number",
+      next: null,
+      parent: place.parent,
+      inputs: {},
+      fields: { VALUE: [name, null] },
+      shadow: false,
+      topLevel: place.topLevel,
+      ...(place.topLevel ? { x: place.x ?? 0, y: place.y ?? 0 } : {}),
+    }
+    return id
+  }
+
+  ctx.fail({
+    kind: "ブロック定義の形が読めない",
+    subject: label,
+    where: label,
+    blockIndex,
+    detail: `${info.shape ?? "形の無い部品"} は扱えない`,
+  })
+  return null
+}
+
+/**
+ * プロトタイプの中身から、呼び出しの綴りと引数名を読む。
+ *
+ * `proccode` はラベルを並べ、引数の位置へ `%s` を置いた綴りである。Scratch は
+ * これで定義と呼び出しを結ぶので、両者が 1 文字でも違えば別のブロックになる。
+ */
+function procedureShape(
+  info: { call?: unknown, names?: unknown } | undefined,
+  ctx: Failing,
+  site: Site,
+): { proccode: string, names: string[] } | null {
+  const call = typeof info?.call === "string" ? info.call : ""
+  if (call === "") return null
+
+  // 真偽の引数は扱わない。黙って文字の引数へ倒すと、Scratch では値の入らない
+  // ブロックが出て、しかも生成は成功する（作業書の非目標は書き分けを免除するが、
+  // 黙ることは免除していない）
+  if (call.includes("%b")) {
+    ctx.fail({
+      kind: "真偽の引数は扱えない",
+      subject: site.label,
+      where: site.label,
+      blockIndex: site.blockIndex,
+      detail: "ブロック定義の引数は <> でなく () か [] で書く",
+    })
+    return null
+  }
+
+  // 上流の綴りを Scratch の綴りへ直す。上流は数と文字を分けるが、Scratch の
+  // `argument_reporter_string_number` はどちらも `%s` で表す
+  const proccode = call.replace(/%[ns]/g, "%s")
+  const names = (Array.isArray(info?.names) ? info.names : []).map(String)
+
+  // 名前の無い引数は、本体から参照する手が無い。Scratch は引数を名前で引くので、
+  // 空の名前を持つ引数は置き場だけがあって値を取り出せない状態になる。生成物は
+  // 成立し公式検証器も通るため、開くまで気づけない（CP6 で実測）
+  const 名無し = names.filter(name => name.trim() === "").length
+  if (名無し > 0) {
+    ctx.fail({
+      kind: "ブロック定義の引数に名前が無い",
+      subject: site.label,
+      where: site.label,
+      blockIndex: site.blockIndex,
+      detail: `${名無し} 個の引数が名前を持たない。括弧の中に名前を書く`,
+    })
+    return null
+  }
+  return { proccode, names }
+}
+
+/**
+ * ブロック定義の綴りと引数名を、印から符号位置へ復す。
+ *
+ * 記法の他の綴り（値・欄・変数の名前）はすべて `restoredOrFail` を通っている。
+ * ここを通さないと、`⟪U+000A⟫` と書いた綴りが印のまま .sb3 へ入り、Scratch の
+ * 画面には印の文字列が出る（同じ記法から出た図とも食い違う）。
+ *
+ * 戻りは復した組。指せない印があれば null（`restoredOrFail` が申告する）
+ */
+function restoredSpelling(
+  shape: { proccode: string, names: string[] },
+  ctx: Failing,
+  site: Site,
+): { proccode: string, names: string[] } | null {
+  const proccode = restoredOrFail(shape.proccode, ctx, site)
+  if (proccode === null) return null
+  const names: string[] = []
+  for (const name of shape.names) {
+    const restoredName = restoredOrFail(name, ctx, site)
+    if (restoredName === null) return null
+    names.push(restoredName)
+  }
+  return { proccode, names }
+}
+
+/** 記法の部品が持つ綴りを取る。ラベルと値で置き場が違う */
+function textOf(node: { value?: unknown, label?: { value?: unknown } } | undefined) {
+  const text = node?.value ?? node?.label?.value
+  return typeof text === "string" ? text : undefined
+}
+
+/**
+ * 作品定義に書いたブロック定義の名前を、内部の綴り（`proccode`）へ直す。
+ *
+ * 利用者は記法へ書いたのと同じ形（`しかくをかく (へん)`）で書く。`%s` は Scratch の
+ * 内部の綴りで、画面のどこにも現れない ── それを作品定義へ書かせると、写すだけで
+ * 済むはずのものを覚え直させることになる。
+ *
+ * 引数の位置は括弧で見分ける。中身の名前は捨てる ── 定義側と呼び出し側で引数名が
+ * 違っても Scratch は同じブロックとして扱うので、綴りの一致に名前は要らない。
+ *
+ * **記法の側と同じゆれを吸収する。** 記法は解析器が全角の括弧を直し空白を畳んでから
+ * 定義と呼び出しを結ぶ。こちらが吸収しないと、画面で見分けの付かない 2 つの綴りを
+ * 並べて「記法に無い」と申告することになる（CP6 で実測。全角の括弧も二重の空白も
+ * 止まっていた）。
+ */
+export function asProccode(written: string): string {
+  return written
+    // 全角の括弧を半角へ。日本語入力では全角が既定で出る
+    .replace(/[（［]/g, "(")
+    .replace(/[）］]/g, ")")
+    .replace(/[([][^()[\]]*[)\]]/g, "%s")
+    // 空白を 1 つへ畳む。全角の空白も空白として扱う
+    .replace(/[\s　]+/g, " ")
+    .trim()
+}
+
+/**
+ * 引数の ID を綴りと位置から導く。
+ *
+ * 無作為に振ると同じ入力から同じ .sb3 が出ない。定義と呼び出しが同じ ID を使う
+ * 必要もあり、両者で別々に採ると引数が結びつかない。ブロックの ID（`b1`）とは
+ * 別の名前空間にして衝突を避ける。
+ *
+ * **綴りは要約して持つ。** そのまま埋めると `argumentids` が引数の数 × 綴りの長さで
+ * 増える ── 引数を N 個持つブロックは、N 個の ID それぞれに綴り全体を抱えるので
+ * 二乗で伸びる（N=100/200/400 で ×3.93・×3.96 を実測。CP6）。要約なら長さが一定で、
+ * 決定性も定義と呼び出しの一致も保たれる。
+ */
+function argumentId(proccode: string, index: number): string {
+  const mark = createHash("sha256").update(proccode).digest("hex").slice(0, 12)
+  return `arg:${mark}:${index}`
+}
+
+/** 定義の帽子と、その中のプロトタイプを組み立てる */
+function emitDefinition(
+  hat: { info?: { call?: unknown, names?: unknown } },
+  ctx: Ctx,
+  place: { parent: string | null, topLevel: boolean, x?: number, y?: number },
+  blockIndex: number,
+  label: string,
+): string | null {
+  const site = { label, position: 0, blockIndex }
+  const shape = procedureShape(hat.info, ctx, site)
+  if (!shape) {
+    // `procedureShape` は真偽の引数を自分で申告する。綴りを取れなかったときだけ
+    // ここが申告する（申告を 2 件並べない）
+    if (typeof hat.info?.call !== "string" || hat.info.call === "") {
+      ctx.fail({
+        kind: "ブロック定義の形が読めない",
+        subject: label,
+        where: label,
+        blockIndex,
+        detail: "作るブロックの綴りを読めない",
+      })
+    }
+    return null
+  }
+  const spelling = restoredSpelling(shape, ctx, site)
+  if (!spelling) return null
+  const { proccode, names } = spelling
+
+  const id = ctx.nextId()
+  const prototype = ctx.nextId()
+  ctx.state.blocks[id] = {
+    opcode: "procedures_definition",
+    next: null,
+    parent: place.parent,
+    inputs: { custom_block: [1, prototype] },
+    fields: {},
+    shadow: false,
+    topLevel: place.topLevel,
+    ...(place.topLevel ? { x: place.x ?? 0, y: place.y ?? 0 } : {}),
+  }
+
+  // 引数はプロトタイプの中に影として差す。呼び出し側は同じ ID を鍵に値を入れるので、
+  // 並びが食い違うと引数が入れ替わる（公式検証器は構造しか見ないので気づかない）
+  const inputs: Record<string, any> = {}
+  names.forEach((name, index) => {
+    const slot = argumentId(proccode, index)
+    const reporter = ctx.nextId()
+    inputs[slot] = [1, reporter]
+    ctx.state.blocks[reporter] = {
+      opcode: "argument_reporter_string_number",
+      next: null,
+      parent: prototype,
+      inputs: {},
+      fields: { VALUE: [name, null] },
+      shadow: true,
+      topLevel: false,
+    }
+  })
+
+  // プロトタイプは影として定義の中に差す。呼び出しと同じ mutation を持ち、
+  // 両者の綴りが食い違うと Scratch が別のブロックとして扱う
+  ctx.state.blocks[prototype] = {
+    opcode: "procedures_prototype",
+    next: null,
+    parent: id,
+    inputs,
+    fields: {},
+    shadow: true,
+    topLevel: false,
+    mutation: procedureMutation(proccode, names, ctx.warped.has(proccode)),
+  }
+  return id
+}
+
+/** 呼び出しを組み立てる */
+function emitCall(
+  block: any,
+  ctx: Ctx,
+  place: { parent: string | null, topLevel: boolean, x?: number, y?: number },
+  blockIndex: number,
+  label: string,
+): string | null {
+  // 綴りは解析器が既に決めている。子から組み直すと引数がブロック（変数・演算・
+  // レポーター）のときに `isInput` が立たず、綴りからも値からも同時に落ちる
+  // （実測 2026-09-03: `えがく (スコア)` が `えがく` になり、定義に結び付かなかった）
+  const site = { label, position: 0, blockIndex }
+  const shape = procedureShape(block.info, ctx, site)
+  if (!shape) {
+    if (typeof block.info?.call !== "string" || block.info.call === "") {
+      ctx.fail({
+        kind: "ブロック定義の形が読めない",
+        subject: label,
+        where: label,
+        blockIndex,
+        detail: "呼び出しの綴りを読めない",
+      })
+    }
+    return null
+  }
+  const spelling = restoredSpelling(shape, ctx, site)
+  if (!spelling) return null
+  const { proccode, names } = spelling
+
+  // 引数は解析器が数えた位置に居る。値を持つ子（`isInput`）とブロックの子の
+  // 両方が引数になりうるので、ラベルでない子をすべて拾う
+  const given: Child[] = (block.children ?? []).filter(
+    (child: Child) => child.isInput || child.isBlock,
+  )
+  if (given.length !== names.length) {
+    ctx.fail({
+      kind: "引数の数が記法と合わない",
+      subject: label,
+      where: label,
+      blockIndex,
+      detail: `綴りは ${names.length} 個の引数を持つが記法は ${given.length} 個渡す`,
+    })
+    return null
+  }
+
+  const id = ctx.nextId()
+  // 定義と同じ規則で ID を導く。ここで別々に採ると、定義の引数と呼び出しの値が
+  // 結びつかず、Scratch は既定値を使う（呼び出しに書いた値が黙って消える）
+  const inputs: Record<string, any> = {}
+  given.forEach((child, index) => {
+    const value = inputValue(
+      // 呼び出しの引数は文字の影を敷く。Scratch のエディタが作る .sb3 と同じ形で、
+      // 影が無いと値を直接書けない。台帳から引かず組み立てるのは、綴りも数も
+      // 利用者が決めるためである
+      {
+        name: argumentId(proccode, index),
+        kind: "input",
+        notation: "%s",
+        shadow: "text",
+        shadowFrom: null,
+        shadowField: null,
+        options: null,
+        optionsFrom: null,
+        namesAllowed: false,
+      },
+      child,
+      ctx,
+      id,
+      { label, position: index + 1, blockIndex },
+    )
+    if (value) inputs[argumentId(proccode, index)] = value
+  })
+
+  ctx.state.blocks[id] = {
+    opcode: "procedures_call",
+    next: null,
+    parent: place.parent,
+    inputs,
+    fields: {},
+    shadow: false,
+    topLevel: place.topLevel,
+    ...(place.topLevel ? { x: place.x ?? 0, y: place.y ?? 0 } : {}),
+    // 引数名は解析器が呼び出しの側にも持たせる（`info.names`）。定義と同じ名前を
+    // 書いて、Scratch のエディタが作る .sb3 と同じ形にする。
+    //
+    // **以前は「呼び出しの記法からは読めない」として空で置いていた。** 綴りを子から
+    // 組み直していたころの制約で、解析器の値を使うようになった時点で偽になっていた
+    // （CP6 の測り直しで発覚。2026-09-04）。空でも実機で値は渡るので、害があったのは
+    // 宣言の側だけである
+    mutation: procedureMutation(proccode, names, ctx.warped.has(proccode)),
+  }
+  return id
+}
+
+/**
+ * 定義と呼び出しが共有する mutation。
+ *
+ * 1 か所で組むのは、定義と呼び出しで別々に作ると綴りや引数の並びが食い違うためである。
+ * 食い違っても構造は正しいので、公式検証器は通してしまう。
+ *
+ * `warp` は作品定義の `再描画しないブロック` が決める。記法はスクリプトしか表せず、
+ * この指定はブロック 1 つでなく定義そのものに掛かるためである。
+ */
+function procedureMutation(proccode: string, names: string[], warp: boolean) {
+  return {
+    tagName: "mutation",
+    children: [],
+    proccode,
+    argumentids: JSON.stringify(names.map((_, index) => argumentId(proccode, index))),
+    argumentnames: JSON.stringify(names),
+    // 既定値は空文字にする。Scratch のエディタが作る .sb3 と同じ形
+    argumentdefaults: JSON.stringify(names.map(() => "")),
+    // 定義と呼び出しで食い違うと Scratch は定義の側を見る。同じ値を入れて揃える
+    warp: warp ? "true" : "false",
+  }
 }
 
 /**

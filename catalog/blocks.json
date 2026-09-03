@@ -2,7 +2,7 @@
   "生成元": {
     "scratchblocks": "3.7.1",
     "scratch-blocks": "2.1.19",
-    "手書きの表": "e3fd0e033349"
+    "手書きの表": "aa833e533d8d"
   },
   "表の出典": [
     {
@@ -32,6 +32,13 @@
       "出典": "scratch-vm の src/extensions/scratch3_pen/index.js（getInfo）",
       "版": "5.0.300",
       "理由": "拡張機能のブロック定義は scratch-blocks に無い。実行時に作られるため静的な定義を持たず、2026-09-02 の実測で pen_ は 0 件だった。scratch-vm は 24MB あり、この 10 件のために依存へ加えない"
+    },
+    {
+      "表": "PROCEDURE_COMMANDS",
+      "種別": "手書き",
+      "出典": "scratchblocks の解析結果を実測して起こした",
+      "版": "3.7.1",
+      "理由": "カスタムブロックの記法は上流の定義表に無い。`定義` は表を通らず構文として解析され、2026-09-03 の実測で custom のカテゴリは 233 件中 0 件だった。opcode と引数名は scratch-blocks に在るので、記法の側だけを手で持つ"
     },
     {
       "表": "CORE_EXTENSIONS",
@@ -77,9 +84,11 @@
     }
   ],
   "件数": {
-    "台帳": 128,
+    "台帳": 131,
     "opcode を例外表から得た": 4,
-    "引数名を取れない": 2
+    "opcode を手書きの表から得た": 3,
+    "引数名を取れない": 2,
+    "引数を利用者が決める": 3
   },
   "ブロック": [
     {
@@ -105,6 +114,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -131,6 +141,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -157,6 +168,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -183,6 +195,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -212,6 +225,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -250,6 +264,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -279,6 +294,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -329,6 +345,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -370,6 +387,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -396,6 +414,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -422,6 +441,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -448,6 +468,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -474,6 +495,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -504,6 +526,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -542,6 +565,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -568,6 +592,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -606,6 +631,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -632,6 +658,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -644,6 +671,7 @@
       "ja": "表示する",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -656,6 +684,7 @@
       "ja": "隠す",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -682,6 +711,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -694,6 +724,7 @@
       "ja": "次のコスチュームにする",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -706,6 +737,7 @@
       "ja": "次の背景にする",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -736,6 +768,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -766,6 +799,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -812,6 +846,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -858,6 +893,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -870,6 +906,7 @@
       "ja": "画像効果をなくす",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -896,6 +933,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -922,6 +960,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -951,6 +990,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -992,6 +1032,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1018,6 +1059,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1059,6 +1101,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1100,6 +1143,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1112,6 +1156,7 @@
       "ja": "音の効果をなくす",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1138,6 +1183,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1150,6 +1196,7 @@
       "ja": "すべての音を止める",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1176,6 +1223,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1202,6 +1250,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1214,6 +1263,7 @@
       "ja": "全部消す",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1226,6 +1276,7 @@
       "ja": "スタンプ",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1238,6 +1289,7 @@
       "ja": "ペンを下ろす",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1250,6 +1302,7 @@
       "ja": "ペンを上げる",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1293,6 +1346,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1336,6 +1390,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1362,6 +1417,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "例外表"
     },
@@ -1388,6 +1444,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1414,6 +1471,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1426,6 +1484,7 @@
       "ja": "@greenFlag が押されたとき",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1495,6 +1554,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1507,6 +1567,7 @@
       "ja": "このスプライトが押されたとき",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1519,6 +1580,7 @@
       "ja": "ステージが押されたとき",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1533,6 +1595,7 @@
         "%m.backdrop"
       ],
       "args": null,
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "例外表"
     },
@@ -1574,6 +1637,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1600,6 +1664,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1626,6 +1691,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1652,6 +1718,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1678,6 +1745,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1711,6 +1779,7 @@
           "shadowField": null
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1731,6 +1800,7 @@
           "shadowField": null
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1764,6 +1834,7 @@
           "shadowField": null
         }
       ],
+      "argsBy": null,
       "alsoCovers": [
         {
           "opcode": "control_if_else",
@@ -1821,6 +1892,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1854,6 +1926,7 @@
           "shadowField": null
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1884,6 +1957,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1896,6 +1970,7 @@
       "ja": "クローンされたとき",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1924,6 +1999,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1936,6 +2012,7 @@
       "ja": "このクローンを削除する",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1962,6 +2039,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -1974,6 +2052,7 @@
       "ja": "タイマーをリセット",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2012,6 +2091,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2050,6 +2130,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2076,6 +2157,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2102,6 +2184,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2140,6 +2223,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2178,6 +2262,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2204,6 +2289,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2216,6 +2302,7 @@
       "ja": "もし端に着いたら、跳ね返る",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2266,6 +2353,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2316,6 +2404,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2342,6 +2431,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2368,6 +2458,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2380,6 +2471,7 @@
       "ja": "x座標",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2392,6 +2484,7 @@
       "ja": "y座標",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2404,6 +2497,7 @@
       "ja": "向き",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2433,6 +2527,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2445,6 +2540,7 @@
       "ja": "大きさ",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2474,6 +2570,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2486,6 +2583,7 @@
       "ja": "音量",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2515,6 +2613,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2541,6 +2640,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2579,6 +2679,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2607,6 +2708,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2619,6 +2721,7 @@
       "ja": "答え",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2688,6 +2791,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2700,6 +2804,7 @@
       "ja": "マウスが押された",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2712,6 +2817,7 @@
       "ja": "マウスのx座標",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2724,6 +2830,7 @@
       "ja": "マウスのy座標",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2753,6 +2860,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2765,6 +2873,7 @@
       "ja": "音量",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2777,6 +2886,7 @@
       "ja": "タイマー",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2792,6 +2902,7 @@
         "%m.spriteOrStage"
       ],
       "args": null,
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "例外表"
     },
@@ -2826,6 +2937,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2838,6 +2950,7 @@
       "ja": "2000年からの日数",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2850,6 +2963,7 @@
       "ja": "はオンラインか?",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2862,6 +2976,7 @@
       "ja": "ユーザー名",
       "inputs": [],
       "args": [],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2900,6 +3015,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2938,6 +3054,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -2976,6 +3093,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3014,6 +3132,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3052,6 +3171,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3090,6 +3210,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3128,6 +3249,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3166,6 +3288,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3204,6 +3327,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3242,6 +3366,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3268,6 +3393,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3306,6 +3432,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3344,6 +3471,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3370,6 +3498,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3408,6 +3537,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3434,6 +3564,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3487,6 +3618,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3525,6 +3657,7 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3563,6 +3696,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3601,6 +3735,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3627,6 +3762,7 @@
           "namesAllowed": true
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
     },
@@ -3665,8 +3801,48 @@
           "namesAllowed": false
         }
       ],
+      "argsBy": null,
       "alsoCovers": [],
       "opcodeFrom": "定義"
+    },
+    {
+      "identifier": "PROCEDURES_DEFINITION",
+      "opcode": "procedures_definition",
+      "category": "custom",
+      "shape": "define-hat",
+      "spec": "define",
+      "ja": "定義",
+      "inputs": [],
+      "args": null,
+      "argsBy": "利用者",
+      "alsoCovers": [],
+      "opcodeFrom": "手書きの表"
+    },
+    {
+      "identifier": "PROCEDURES_CALL",
+      "opcode": "procedures_call",
+      "category": "custom",
+      "shape": "stack",
+      "spec": "",
+      "ja": null,
+      "inputs": [],
+      "args": null,
+      "argsBy": "利用者",
+      "alsoCovers": [],
+      "opcodeFrom": "手書きの表"
+    },
+    {
+      "identifier": "getParam",
+      "opcode": "argument_reporter_string_number",
+      "category": "custom-arg",
+      "shape": "reporter",
+      "spec": "",
+      "ja": null,
+      "inputs": [],
+      "args": null,
+      "argsBy": "利用者",
+      "alsoCovers": [],
+      "opcodeFrom": "手書きの表"
     }
   ],
   "覆わない範囲": {
@@ -3933,6 +4109,20 @@
         "opcode": "sensing_of"
       }
     ],
+    "引数を利用者が決めるブロック": [
+      {
+        "identifier": "PROCEDURES_DEFINITION",
+        "opcode": "procedures_definition"
+      },
+      {
+        "identifier": "PROCEDURES_CALL",
+        "opcode": "procedures_call"
+      },
+      {
+        "identifier": "getParam",
+        "opcode": "argument_reporter_string_number"
+      }
+    ],
     "選択肢を補足で埋めた入力": [
       {
         "identifier": "LOOKS_SWITCHBACKDROPTO",
@@ -4125,6 +4315,18 @@
     ],
     "台帳から到達しない opcode": [
       {
+        "opcode": "argument_editor_boolean",
+        "定義が空": false
+      },
+      {
+        "opcode": "argument_editor_string_number",
+        "定義が空": false
+      },
+      {
+        "opcode": "argument_reporter_boolean",
+        "定義が空": false
+      },
+      {
         "opcode": "control_all_at_once",
         "定義が空": false
       },
@@ -4234,6 +4436,14 @@
       },
       {
         "opcode": "pen_menu_colorParam",
+        "定義が空": true
+      },
+      {
+        "opcode": "procedures_declaration",
+        "定義が空": true
+      },
+      {
+        "opcode": "procedures_prototype",
         "定義が空": true
       },
       {

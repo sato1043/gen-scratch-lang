@@ -17,6 +17,7 @@ import JSZip from "jszip"
 import { loadCatalog } from "../src/catalog.ts"
 import { parseNotation } from "../src/parse.ts"
 import { readSb3 } from "../src/read.ts"
+import { buildProject } from "../src/project.ts"
 import { serializeScripts } from "../src/serialize.ts"
 import { officialProblems } from "../src/validate.ts"
 
@@ -302,6 +303,12 @@ async function announcedByCode(): Promise<Set<string>> {
     "(記録) を [記録 v] に追加する",
     // 台帳が引数名を取れない 2 件は、記法から呼ぶとここで止まる
     "背景が [背景1 v] になったとき",
+    // 形の崩れたブロック定義。`定義` だけで作るブロックの見出しが無い
+    "定義",
+    // 真偽を取る引数を書いたブロック定義。扱わないので申告して止まる
+    "定義 しらべる <ある?>",
+    // 括弧を空で書いた引数。名前が無いと本体から参照できない
+    ["定義 えがく ()", "(1) 歩動かす"].join("\n"),
     // 文字として存在しない番号を印へ書いた記法。手順書が案内する申告なので、実物が
     // 出ることをここで確かめる
     `[あ${String.fromCodePoint(0x27ea)}U+110000${String.fromCodePoint(0x27eb)}い] と言う`,
@@ -310,9 +317,38 @@ async function announcedByCode(): Promise<Set<string>> {
   const kinds = new Set<string>()
   for (const code of broken) {
     const doc = await parseNotation(code)
-    const { problems } = serializeScripts(doc, { catalog, names })
+    const { problems } = serializeScripts(doc, { catalog, names, warped: [] })
     for (const problem of problems) kinds.add(problem.kind)
   }
+  // 作品定義の側で立つ申告。記法だけでは出ない ── `再描画しないブロック` は
+  // 定義が持つので、`serializeScripts` を通しても届かない
+  const dir = mkdtempSync(join(tmpdir(), "gen-scratch-guide-"))
+  writeFileSync(
+    join(dir, "project.yaml"),
+    [
+      "名前: ためし",
+      "スプライト:",
+      "  - 名前: ネコ",
+      "    スクリプト: neko.sbk",
+      "    再描画しないブロック:",
+      "      - 12",
+      "      - 記法に無い名前",
+    ].join("\n"),
+  )
+  // 綴りの同じ定義を 2 つ置く。これも作品定義の側（`buildProject`）で立つ
+  writeFileSync(
+    join(dir, "neko.sbk"),
+    [
+      "緑の旗が押されたとき",
+      "定義 えがく",
+      "(1) 歩動かす",
+      "",
+      "定義 えがく",
+      "(2) 歩動かす",
+    ].join("\n"),
+  )
+  for (const problem of (await buildProject(dir)).problems) kinds.add(problem.kind)
+
   // 出荷経路の最後に置いた検証器。zip でも JSON でもないバイト列で拒否させる
   for (const problem of await officialProblems(Buffer.from("not a zip"), "測定")) {
     kinds.add(problem.kind)
@@ -411,8 +447,23 @@ const ANNOUNCEMENT = [
  * 読み取りの手順書は TASK0013 で起こした（`docs/knowledge/reading.md`）。読む側で立つ
  * 申告のうち利用者が実際に出会う 3 種はそちらの表が持ち、上の照合（案内のページが
  * 挙げる申告を、実装が実際に出す）は 2 ページの表を読む（2026-08-24）。
+ *
+ * 60 から 63 へ動かしたのは、ブロック定義まわりの 3 種
+ * （`再描画しないブロックの書き方が違う`・`再描画しないブロックの名前が記法に無い`・
+ * `真偽の引数は扱えない`）である。**3 種とも表へ載せる** ── どれも手書きの誤りに
+ * 対して出る（作品定義の書き間違い・綴りの取り違え・引数を `<>` で書いた）。
+ * 前 2 種は当初載せ忘れており、CP6 の使用性が指摘した（2026-09-03 の判断）。
+ *
+ * 64 から 66 へ動かしたのは、CP6 の測り直しで塞いだ 2 種
+ * （`ブロック定義の引数に名前が無い`・`定義がスクリプトの途中にある`）である。
+ * **2 種とも表へ載せる** ── どちらも手書きの誤りに対して出て、それまでは申告 0 件で
+ * 通っていた（2026-09-04 の判断）。
+ *
+ * 63 から 64 へ動かしたのは、綴りの同じブロック定義が 2 つあることの申告
+ * （`同じ綴りのブロック定義が 2 つある`）である。**これも表へ載せる** ── 手書きの
+ * 誤りに対して出るうえ、黙って通すと .sb3 を開くまで気づけない（2026-09-04 の判断）。
  */
-const ANNOUNCEMENT_KINDS = 58
+const ANNOUNCEMENT_KINDS = 66
 
 test("実装が出す申告の種類が増えていない", () => {
   const kinds = new Set<string>()

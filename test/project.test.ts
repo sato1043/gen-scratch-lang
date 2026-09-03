@@ -699,3 +699,279 @@ test("申告の並びが、台帳を先にし、その後は定義に書いた�
     "台帳に無いブロック",
   ])
 })
+
+/**
+ * ブロック定義を 2 つ持つ作品。片方だけを「再描画しない」と挙げる。
+ *
+ * 1 つでは足りない ── 全部を真にする実装でも緑になる。挙げていない側が偽のままで
+ * あることまで見て、初めて「挙げたものだけ」を測ったことになる
+ */
+const WARP = {
+  "project.yaml": [
+    "名前: ためし",
+    "スプライト:",
+    "  - 名前: ネコ",
+    "    スクリプト: neko.sbk",
+    "    再描画しないブロック:",
+    "      - しかくをかく (へん)",
+  ].join("\n"),
+  "neko.sbk": [
+    "定義 しかくをかく (へん)",
+    "(4) 回繰り返す",
+    "  (へん) 歩動かす",
+    "end",
+    "",
+    "定義 まつ",
+    "(1) 秒待つ",
+    "",
+    "緑の旗が押されたとき",
+    "しかくをかく (120)",
+    "まつ",
+  ].join("\n"),
+}
+
+/** mutation を持つブロックの、見たい欄だけ */
+type Mutated = { mutation?: { proccode?: string, warp?: string } }
+
+/** ブロック定義の綴りごとに、mutation の `warp` を集める */
+function warpsIn(target: { blocks: Record<string, Mutated> }): Record<string, string[]> {
+  const found: Record<string, string[]> = {}
+  for (const block of Object.values(target.blocks)) {
+    const mutation = block.mutation
+    if (!mutation?.proccode) continue
+    ;(found[mutation.proccode] ??= []).push(String(mutation.warp))
+  }
+  return found
+}
+
+test("再描画しないブロックに挙げた定義だけが warp を持つ", async () => {
+  const { project, problems } = await build(WARP)
+  assert.deepEqual(problems, [])
+  const [, neko] = project.targets
+
+  // 定義とプロトタイプと呼び出しの 3 つが同じ綴りを持つ。Scratch は定義の側を見るが、
+  // 食い違ったまま出すと編集した利用者が別のブロックを作ってしまう
+  assert.deepEqual(warpsIn(neko), {
+    "しかくをかく %s": ["true", "true"],
+    まつ: ["false", "false"],
+  })
+
+  await official(project)
+})
+
+test("再描画しないブロックの名前を、記法と同じ形で書ける", async () => {
+  // 内部の綴り（`%s`）は Scratch の画面にも記法にも現れない。作品定義へ書かせると、
+  // 写すだけで済むはずのものを覚え直させることになる
+  const { project, problems } = await build({
+    ...WARP,
+    "project.yaml": WARP["project.yaml"].replace(
+      "しかくをかく (へん)",
+      "しかくをかく (なまえはなんでもよい)",
+    ),
+  })
+  assert.deepEqual(problems, [])
+  assert.deepEqual(warpsIn(project.targets[1])["しかくをかく %s"], ["true", "true"])
+})
+
+test("挙げた名前が記法に無ければ、その名前を示して申告する", async () => {
+  // 既定へ倒すと、綴りを取り違えた指定が黙って効かないまま生成が成功する。速さのために
+  // 書いた指定なので、効かなくても動いてしまうのが一番わるい
+  const { problems } = await build({
+    ...WARP,
+    "project.yaml": WARP["project.yaml"].replace("しかくをかく (へん)", "しかくをかく"),
+  })
+  assert.deepEqual(problems.map(p => p.kind), ["再描画しないブロックの名前が記法に無い"])
+
+  // 書いたものと見比べられる形で返す。内部の綴りで返すと写した元と見比べられない
+  assert.match(detailOf(problems[0]), /しかくをかく \(引数1\)/)
+  assert.doesNotMatch(String(problems[0].subject ?? ""), /%s/)
+})
+
+test("再描画しないブロックの書き方が違えば、既定へ倒さず申告する", async () => {
+  const kindsOf = async (written: string[]) =>
+    (
+      await build({
+        ...WARP,
+        "project.yaml": [
+          "名前: ためし",
+          "スプライト:",
+          "  - 名前: ネコ",
+          "    スクリプト: neko.sbk",
+          ...written,
+        ].join("\n"),
+      })
+    ).problems.map(p => p.kind)
+
+  // 入れ物が並びでないことは、キーの型を引く共通の検査が見る。ここで二重に見ると
+  // 同じ書き間違いへ申告が 2 件並ぶ（`変数` で一度そうなっていた）
+  assert.deepEqual(await kindsOf(["    再描画しないブロック: しかくをかく (へん)"]), [
+    "定義の値の型が違う",
+  ])
+  assert.deepEqual(await kindsOf(["    再描画しないブロック:", "      - 12"]), [
+    "再描画しないブロックの書き方が違う",
+  ])
+  // 書かなければ何も起きない。申告は書き間違いにだけ出す
+  assert.deepEqual(await kindsOf([]), [])
+})
+
+test("スクリプトを持たないターゲットでも、挙げた名前を黙って捨てない", async () => {
+  // 記法を読む前に返る道がある。そこで見ないと、この指定だけが申告も無く消える
+  const { problems } = await build({
+    "project.yaml": [
+      "名前: ためし",
+      "スプライト:",
+      "  - 名前: ネコ",
+      "    再描画しないブロック:",
+      "      - しかくをかく (へん)",
+    ].join("\n"),
+  })
+  assert.deepEqual(problems.map(p => p.kind), ["再描画しないブロックの名前が記法に無い"])
+  assert.match(detailOf(problems[0]), /ブロック定義を 1 つも持たない/)
+})
+
+test("同じ綴りのブロック定義が 2 つあれば申告する", async () => {
+  // Scratch は綴りだけで定義と呼び出しを結ぶので、綴りが同じ定義が 2 つあると
+  // どちらを呼ぶかを決められない。生成物は成立し公式検証器も通るため、
+  // .sb3 を開くまで気づけない（CP6 で実測。申告 0 件だった）
+  const { problems } = await build({
+    "project.yaml": ["名前: ためし", "スプライト:", "  - 名前: ネコ", "    スクリプト: n.sbk"]
+      .join("\n"),
+    "n.sbk": ["定義 えがく", "(1) 歩動かす", "", "定義 えがく", "(2) 歩動かす"].join("\n"),
+  })
+  assert.deepEqual(problems.map(p => p.kind), ["同じ綴りのブロック定義が 2 つある"])
+
+  // 対照。綴りが違えば通る。何を書いても申告する実装でも上は緑になる
+  const 別 = await build({
+    "project.yaml": ["名前: ためし", "スプライト:", "  - 名前: ネコ", "    スクリプト: n.sbk"]
+      .join("\n"),
+    "n.sbk": ["定義 えがく", "(1) 歩動かす", "", "定義 かく", "(2) 歩動かす"].join("\n"),
+  })
+  assert.deepEqual(別.problems, [])
+})
+
+test("作品定義の綴り合わせが、記法と同じゆれを吸収する", async () => {
+  // 記法は解析器が全角の括弧を直し空白を畳んでから定義と呼び出しを結ぶ。こちらが
+  // 吸収しないと、画面で見分けの付かない 2 つの綴りを並べて「記法に無い」と申告する
+  const 記法 = ["定義 えがく (かず)", "(かず) 歩動かす"].join("\n")
+  const kindsOf = async (書いた: string) =>
+    (
+      await build({
+        "project.yaml": [
+          "名前: ためし",
+          "スプライト:",
+          "  - 名前: ネコ",
+          "    スクリプト: n.sbk",
+          "    再描画しないブロック:",
+          `      - ${書いた}`,
+        ].join("\n"),
+        "n.sbk": 記法,
+      })
+    ).problems.map(p => p.kind)
+
+  // 全角の括弧・二重の空白・全角の空白。日本語入力ではどれも普通に出る
+  assert.deepEqual(await kindsOf("えがく （かず）"), [])
+  assert.deepEqual(await kindsOf("えがく  (かず)"), [])
+  assert.deepEqual(await kindsOf("えがく　(かず)"), [])
+
+  // 対照。本当に無い名前は止まる。全部通す実装でも上の 3 つは緑になる
+  assert.deepEqual(await kindsOf("ちがう (かず)"), ["再描画しないブロックの名前が記法に無い"])
+})
+
+test("引数の ID が、綴りの長さに引きずられない", async () => {
+  // ID が綴りを全長で抱えると、引数 N 個のブロックは N 個の ID それぞれに綴り全体を
+  // 持つので二乗で伸びる（CP6 で N=100/200/400 の実測がある）
+  const 長い = "とても長い名前を持つブロック定義"
+  const idsOf = async (引数: number) => {
+    const 並び = Array.from({ length: 引数 }, (_, i) => `(引数${i})`).join(" と ")
+    const { project } = await build({
+      "project.yaml": ["名前: ためし", "スプライト:", "  - 名前: ネコ", "    スクリプト: n.sbk"]
+        .join("\n"),
+      "n.sbk": `定義 ${長い} ${並び}\n(1) 歩動かす`,
+    })
+    const prototype = Object.values<any>(project.targets[1].blocks).find(
+      block => block.opcode === "procedures_prototype",
+    )
+    return String(prototype.mutation.argumentids).length
+  }
+
+  // 引数を倍にしても、長さは倍までしか伸びない（綴りの長さが乗らない）
+  const [a, b] = [await idsOf(2), await idsOf(4)]
+  assert.ok(b < a * 2.5, `二乗で伸びている: 引数 2 個で ${a} / 4 個で ${b}`)
+  // 較正。長さを 1 度も測れていないと上は通ってしまう
+  assert.ok(a > 0 && b > a, `測る対象が無い: ${a} / ${b}`)
+})
+
+test("記法の行末が CRLF でも、綴りに復帰文字が入らない", async () => {
+  // 解析器は改行だけを行の区切りにするので、CRLF だと復帰文字が行の中身へ残り、
+  // ブロック定義の綴りの末尾に**画面で見えない文字**が入る。CRLF と LF が混ざった
+  // 記法では申告 0 件で通っていた（CP6 の測り直しで実測）。Windows のエディタは
+  // CRLF が既定で、追跡下を守る .gitattributes は手書きの記法に及ばない
+  const CR = String.fromCharCode(13)
+  const 本文 = ["定義 えがく (かず)", "(かず) 歩動かす", "", "緑の旗が押されたとき", "えがく (1)"]
+  const spellsOf = async (記法: string) => {
+    const { project, problems } = await build({
+      "project.yaml": ["名前: ためし", "スプライト:", "  - 名前: ネコ", "    スクリプト: n.sbk"]
+        .join("\n"),
+      "n.sbk": 記法,
+    })
+    assert.deepEqual(problems, [], `申告が出た: ${記法.replace(/\r/g, "<CR>")}`)
+    return [
+      ...new Set(
+        Object.values<{ mutation?: { proccode?: string } }>(project.targets[1].blocks)
+          .filter(block => block.mutation?.proccode)
+          .map(block => block.mutation!.proccode!),
+      ),
+    ]
+  }
+
+  // 3 通りとも同じ綴りになる。混在が一番わるい ── 全部 CRLF なら別の申告で止まるが、
+  // 混ざると申告 0 件で復帰文字入りの綴りが通っていた
+  const 期待 = ["えがく %s"]
+  assert.deepEqual(await spellsOf(本文.join("\n")), 期待, "LF")
+  assert.deepEqual(await spellsOf(本文.join(CR + "\n")), 期待, "CRLF")
+  assert.deepEqual(await spellsOf(本文[0] + CR + "\n" + 本文.slice(1).join("\n")), 期待, "混在")
+})
+
+test("引数に名前が無いブロック定義を申告する", async () => {
+  // 名前の無い引数は本体から参照できない。置き場だけがあって値を取り出せない
+  // ブロックが、申告 0 件・公式検証器も通る形で出ていた（CP6 の測り直しで実測）
+  const { problems } = await build({
+    "project.yaml": ["名前: ためし", "スプライト:", "  - 名前: ネコ", "    スクリプト: n.sbk"]
+      .join("\n"),
+    "n.sbk": ["定義 えがく ()", "(1) 歩動かす"].join("\n"),
+  })
+  assert.deepEqual(problems.map(p => p.kind), ["ブロック定義の引数に名前が無い"])
+
+  // 対照。名前があれば通る
+  const 名前あり = await build({
+    "project.yaml": ["名前: ためし", "スプライト:", "  - 名前: ネコ", "    スクリプト: n.sbk"]
+      .join("\n"),
+    "n.sbk": ["定義 えがく (かず)", "(かず) 歩動かす"].join("\n"),
+  })
+  assert.deepEqual(名前あり.problems, [])
+})
+
+test("定義がスクリプトの途中にあれば申告する", async () => {
+  // `定義` は帽子なので、解析器はそこで新しいスクリプトを始める。前の続きのつもりで
+  // 書くと前のスクリプトが中身を失い、旗を押しても何も起きない .sb3 が申告 0 件で
+  // 出ていた（CP6 の測り直しで実測）
+  const kindsOf = async (記法: string[]) =>
+    (
+      await build({
+        "project.yaml": ["名前: ためし", "スプライト:", "  - 名前: ネコ", "    スクリプト: n.sbk"]
+          .join("\n"),
+        "n.sbk": 記法.join("\n"),
+      })
+    ).problems.map(p => p.kind)
+
+  assert.deepEqual(await kindsOf(["緑の旗が押されたとき", "定義 えがく", "(1) 歩動かす"]), [
+    "定義がスクリプトの途中にある",
+  ])
+
+  // 対照 2 つ。空行で割れば通る。先頭にあっても通る。どちらも申告する実装なら落ちる
+  assert.deepEqual(
+    await kindsOf(["緑の旗が押されたとき", "(1) 歩動かす", "", "定義 えがく", "(2) 歩動かす"]),
+    [],
+  )
+  assert.deepEqual(await kindsOf(["定義 えがく", "(1) 歩動かす"]), [])
+})

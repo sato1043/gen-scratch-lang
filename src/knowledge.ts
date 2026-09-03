@@ -47,6 +47,10 @@ export const CATEGORIES = [
   { key: "variables", label: "変数" },
   { key: "list", label: "リスト" },
   { key: "pen", label: "ペン" },
+  // Scratch のパレットに出る綴りへ揃える（scratchblocks の日本語辞書で
+  // `"My Blocks": "ブロック定義"`）。利用者は画面でこの語を見る
+  { key: "custom", label: "ブロック定義" },
+  { key: "custom-arg", label: "ブロック定義の引数" },
 ]
 
 /** 台帳の形状の呼び名 */
@@ -58,6 +62,18 @@ const SHAPES: Record<string, string> = {
   "c-block cap": "中身を持つ・終わり",
   reporter: "値",
   boolean: "真偽",
+  "define-hat": "定義",
+}
+
+/**
+ * 表の記法の列を作る。
+ *
+ * 綴りを持たないブロックがある ── ブロック定義の呼び出しと引数の参照は、名前を利用者が
+ * 決めるため台帳が綴りを持たない。null をそのまま埋めると表に `null` と出る。表を組む
+ * 場所が 2 つ（一覧と、選択肢が長い引数を回す末尾の表）あるので、判定を 1 か所へ寄せる。
+ */
+function spellingCell(block: Entry): string {
+  return block.ja === null ? "利用者が決める" : `\`${block.ja}\``
 }
 
 /**
@@ -126,7 +142,7 @@ export function categoryTable(catalog: Catalog, category: string): string {
       const cell = argumentCell(block)
       deferred.push(...cell.deferred)
       return (
-        `| \`${block.ja}\` | \`${block.opcode}\` | ${shapeOf(block)} |` +
+        `| ${spellingCell(block)} | \`${block.opcode}\` | ${shapeOf(block)} |` +
         ` ${cell.text} |`
       )
     })
@@ -165,9 +181,15 @@ export function categoryTable(catalog: Catalog, category: string): string {
  * `block` は台帳の項目。戻りはセルの中身と、末尾へ回す行。
  */
 function argumentCell(block: Entry): { text: string; deferred: string[] } {
-  // 引数名を取れない 2 件は、記法から呼ぶと「中身の数に合う opcode が無い」で止まる
-  // （2026-08-19 実測）。「覆わない範囲」に既出だが、一覧だけを見る人にも書けないと分かる形で出す
-  if (!block.args) return { text: UNRESOLVED_ARGUMENTS, deferred: [] }
+  // 引数を持たない理由は 2 つある。台帳が導けない（記法からも書けない）のと、
+  // 利用者が決める（記法からは書ける）のと。区別せずに刷ると、後者へ
+  // 「記法からは書けない」という偽の文を公開ページへ出す（CP6 で実測）
+  if (!block.args) {
+    return {
+      text: block.argsBy === "利用者" ? USER_DEFINED_ARGUMENTS : UNRESOLVED_ARGUMENTS,
+      deferred: [],
+    }
+  }
 
   const args = (block.args ?? []).filter((arg: CatalogArgument) => arg.kind !== "statement")
   if (args.length === 0) return { text: "—", deferred: [] }
@@ -183,7 +205,7 @@ function argumentCell(block: Entry): { text: string; deferred: string[] } {
       // 選択肢を持つことは上で確かめた。持つ形だけを渡す
       const choices = choicesOf({ options, namesAllowed: arg.namesAllowed })
       if (choices.length <= OPTIONS_INLINE_LIMIT) return `${place} ${type}（${choices}）`
-      deferred.push(`| \`${block.ja}\` | \`%${index + 1}\` | ${choices} |`)
+      deferred.push(`| ${spellingCell(block)} | \`%${index + 1}\` | ${choices} |`)
       return `${place} ${type}（${Object.keys(options).length} 種・下の表）`
     })
     .join(" / ")
@@ -194,6 +216,17 @@ function argumentCell(block: Entry): { text: string; deferred: string[] } {
  * 引数を解けないブロックの一覧に出す文。件数を数える検査から引けるよう export する。
  */
 export const UNRESOLVED_ARGUMENTS = "引数を解けない。記法からは書けない"
+
+/**
+ * 引数を利用者が決めるブロックの一覧に出す文。
+ *
+ * 台帳が引数を持たない点は上と同じだが、意味が逆である ── 記法からは書ける。
+ * 同じ `args: null` を 2 つの意味で使っているので、読む側が `argsBy` で分ける。
+ *
+ * **綴りの欄が出す「利用者が決める」と別の文言にする。** 同じ綴りにすると、一覧から
+ * 数える検査が 2 つの欄をまとめて数え、件数が合わない（実測 2026-09-03）。
+ */
+export const USER_DEFINED_ARGUMENTS = "引数は利用者が決める"
 
 /**
  * 引数 1 つの型を、記法での書き方の呼び名で返す。

@@ -1,10 +1,10 @@
 ブロック解説
 ============
 
-Scratch のブロックを、カテゴリごとに解説する。扱うのは core の 9 カテゴリと、
-扱うと裁定した拡張機能（ペン）である。各ページは
-2 層でできている。カテゴリが何をするかの説明は人が書き、それ以外は台帳から生成する。
-一覧を手で書くと台帳と二重管理になるためである。
+Scratch のブロックを、カテゴリごとに解説する。扱うのは core の 9 カテゴリと、扱うと
+裁定した拡張機能（ペン）と、ブロック定義である。各ページは 2 層でできている。カテゴリが
+何をするかの説明は人が書き、それ以外は台帳から生成する。一覧を手で書くと台帳と
+二重管理になるためである。
 
 生成する側は 3 つでできている。引数の欄の読み方を述べる凡例と、記法・opcode・形・引数の
 4 列を持つ一覧と、選択肢が長い引数だけを回す末尾の表である。引数の型と選択肢の綴りは
@@ -22,6 +22,8 @@ Scratch のブロックを、カテゴリごとに解説する。扱うのは co
 | [変数](variables.md) | 1 つの値を覚える |
 | [リスト](list.md) | 並んだ値を覚える |
 | [ペン](pen.md) | 線を引く・スタンプ |
+| [ブロック定義](custom.md) | 処理にまとまりと名前を与える |
+| [ブロック定義の引数](custom-arg.md) | 定義したブロックが受け取る値 |
 
 一覧を組み立て直して差分が無いことを確かめるには、リポジトリの根で次を実行する。
 
@@ -80,6 +82,12 @@ node src/cli.ts knowledge --check
 - `EVENT_WHENBACKDROPSWITCHESTO`
 - `SENSING_OF`
 
+### 引数を利用者が決めるブロック（3 件）
+
+- `PROCEDURES_DEFINITION`
+- `PROCEDURES_CALL`
+- `getParam`
+
 ### 選択肢を補足で埋めた入力（3 件）
 
 - `LOOKS_SWITCHBACKDROPTO` の入力 `BACKDROP`
@@ -118,8 +126,11 @@ node src/cli.ts knowledge --check
 - `DATA_ITEMNUMOFLIST` の入力 `ITEM`（影は `text`）
 - `DATA_LISTCONTAINSITEM` の入力 `ITEM`（影は `text`）
 
-### 台帳から到達しない opcode（35 件）
+### 台帳から到達しない opcode（40 件）
 
+- `argument_editor_boolean`
+- `argument_editor_string_number`
+- `argument_reporter_boolean`
 - `control_all_at_once`
 - `control_clear_counter`
 - `control_create_clone_of_menu`
@@ -148,6 +159,8 @@ node src/cli.ts knowledge --check
 - `motion_xscroll`
 - `motion_yscroll`
 - `pen_menu_colorParam`
+- `procedures_declaration`
+- `procedures_prototype`
 - `sensing_distancetomenu`
 - `sensing_keyoptions`
 - `sensing_loud`

@@ -31,6 +31,7 @@ function used(doc: any): { variable: string[], list: string[] } {
   const found = { variable: new Set<string>(), list: new Set<string>() }
   serializeScripts(doc, {
     catalog,
+    warped: [],
     names: {
       idFor: (kind: string, name: string) => {
         if (kind !== "broadcast") found[kind as "variable" | "list"].add(name)
@@ -121,6 +122,29 @@ test("入れ子のブロックと C 型の中身も往復する", async () => {
   // 入れ子と中身が落ちれば列が短くなる。件数も直に見る
   // 帽子・ずっと・もし・触れた・歩動かす・乱数の 6 つ
   assert.equal(before.length, 6, `元の識別子列: ${before.join(", ")}`)
+  assert.deepEqual(after, before, `戻した記法:\n${back}`)
+})
+
+test("ブロック定義と呼び出しも往復する", async () => {
+  const { before, after, back } = await roundTrip(
+    [
+      "定義 えがく",
+      "(10) 歩動かす",
+      "",
+      "緑の旗が押されたとき",
+      "えがく",
+    ].join("\n"),
+  )
+
+  // 逆変換器は呼び出しへ `::custom` を付ける。残すと解析器が識別子を付けず、書き出した
+  // 記法を組み立て直せない ── 落とす処理を消すと、この検査だけが落ちる
+  assert.ok(
+    !back.includes("::custom"),
+    `戻した記法に印が残っている:\n${back}`,
+  )
+  // 定義の帽子・作るブロックの見出し・歩動かす・旗・呼び出しの 5 つ。見出しは
+  // 識別子を持たないので `custom` として数に入る
+  assert.equal(before.length, 5, `元の識別子列: ${before.join(", ")}`)
   assert.deepEqual(after, before, `戻した記法:\n${back}`)
 })
 
@@ -454,4 +478,47 @@ test("表に壊れた中身が混ざったまま記法へ戻そうとしたら�
 
   assert.throws(() => toNotation(null as any), /ブロックの表になっていない/)
   assert.throws(() => toNotation([] as any), /ブロックの表になっていない/)
+})
+
+test("引数を持つブロック定義と、ブロックを渡す呼び出しも往復する", async () => {
+  // 引数を持たない定義だけを測っていたため、往復が閉じないことに気づけなかった
+  // （CP6 で実測）。引数の参照は必ず行の途中に居るので、行末で印を落とす実装は
+  // 1 つも落とせない。呼び出しの引数も、ブロック（変数・演算）だと落ちていた
+  const { before, after, back } = await roundTrip(
+    [
+      "定義 えがく (かず) を (いろ) で",
+      "(かず) 歩動かす",
+      "",
+      "緑の旗が押されたとき",
+      "えがく (スコア) を [あか] で",
+      "えがく ((1) + (2)) を [あお] で",
+    ].join("\n"),
+  )
+
+  assert.ok(!back.includes("::custom"), `戻した記法に印が残っている:\n${back}`)
+  // 引数の参照が本体にも残る。定義の見出しに 1 つ、本体に 1 つで 2 回出る。
+  // 消えると本体のブロックの中身が空になる（綴りは言語で変わるので数で見る）
+  assert.equal(back.split("(かず)").length - 1, 2, `引数の参照が消えた:\n${back}`)
+  // 呼び出しの引数も残る。落ちると綴りが定義と食い違い、Scratch で結び付かない
+  assert.match(back, /えがく \(スコア\)/, `変数の引数が消えた:\n${back}`)
+  assert.deepEqual(after, before, `戻した記法:\n${back}`)
+})
+
+test("定義と呼び出しの綴りが、大小・記号・空白のゆれを越えて一致する", async () => {
+  // 解析器は正規化して定義と呼び出しを結ぶ（小文字化・空白畳み・記号の除去）。
+  // こちらが綴りを組み直すと、その正規化を持たないぶんだけ割れて呼び出しが死ぬ
+  const project = await openSb3(
+    await toSb3(
+      ["定義 Draw, a (n)", "(n) 歩動かす", "", "緑の旗が押されたとき", "draw a (5)"].join("\n"),
+    ),
+  )
+  const spells = new Set(
+    Object.values<any>(spriteOf<any>(project.targets).blocks)
+      .filter(block => block.mutation?.proccode)
+      .map(block => block.mutation.proccode),
+  )
+  // 一致だけを見ると足りない。両側を同じように崩す実装（小文字化など）でも一致は
+  // 保たれるので、綴りそのものを固定する（実測: `toLowerCase()` を挟む破壊が
+  // 一致の検査を素通りした。2026-09-03）
+  assert.deepEqual([...spells], ["Draw, a %s"], "定義に書いた綴りが保たれていない")
 })

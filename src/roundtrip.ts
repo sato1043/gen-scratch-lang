@@ -15,6 +15,7 @@ import { eachBlock } from "./parse.ts"
 import { clip } from "./errors.ts"
 import { PROJECT_JSON_LIMIT, acceptArchive, refuseBadLimit } from "./intake.ts"
 import { TYPES, asKeyed } from "./definition.ts"
+import { SENTINEL_CLOSE, SENTINEL_OPEN } from "./notation.ts"
 
 const require = createRequire(import.meta.url)
 const { toScratchblocks } = require("parse-sb3-blocks")
@@ -490,9 +491,40 @@ export function toScripts(
     // 影ブロックと、他のブロックに繋がっているものは、スクリプトの先頭ではない。
     // 単独で置かれた値（並び）も記法にしない ── 逆変換器はレポーターから書き起こせない
     if (Array.isArray(block) || !block.topLevel || block.shadow) continue
-    scripts.push(toScratchblocks(id, blocks, locale, { tab: INDENT }))
+    scripts.push(withoutCustomMark(toScratchblocks(id, blocks, locale, { tab: INDENT })))
   }
   return scripts
+}
+
+/**
+ * ブロック定義の呼び出しに付く `::custom` を落とす。
+ *
+ * 逆変換器はこの印を付けるが、残すと解析器が呼び出しへ識別子を与えない（実測:
+ * `えがく::custom` は id を持たず、`えがく` は `PROCEDURES_CALL` を返す）。印が
+ * 残った記法は組み立て直せないので、往復が閉じない。
+ *
+ * **読み取れないブロックの印（`⟪読み取れない: …⟫::custom`）は残す。** 読み取り側は
+ * その `::custom` を目印にコメントへ直しており、ここで落とすと目印を失う。
+ *
+ * **判別は直前の綴りだけで行う。** 行に印があるかで分けると、印を持つ行の中の
+ * 呼び出しまで残る。行末で留めるのも同じで、引数を参照する定義（`(かず::custom)
+ * 歩動かす`）は参照が必ず行の途中に居るので 1 つも落ちなかった（実測 2026-09-03）。
+ * 符号位置の印（`⟪U+27EB⟫`）で終わる綴りは利用者の書いたブロック名なので落とす ──
+ * 閉じ括弧の有無だけで見ると、名前に `⟫` を持つブロックの往復が閉じない。
+ */
+function withoutCustomMark(notation: string): string {
+  return notation.replace(/(.*?)::custom/g, (whole, before: string) =>
+    keepsMark(before) ? whole : before,
+  )
+}
+
+/** 符号位置の印。`spelled` が作る形で、これで終わる綴りは利用者が書いたものである */
+const CODE_POINT_MARK = new RegExp(`${SENTINEL_OPEN}U\\+[0-9A-F]{4,6}${SENTINEL_CLOSE}$`)
+
+/** 直前の綴りが「読み取れないブロックの印」を閉じているか */
+function keepsMark(before: string): boolean {
+  if (!before.endsWith(SENTINEL_CLOSE)) return false
+  return !CODE_POINT_MARK.test(before)
 }
 
 /**

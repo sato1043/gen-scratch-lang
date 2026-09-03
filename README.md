@@ -46,7 +46,7 @@ node src/cli.ts knowledge --check
 - [既にある作品を読み解く](docs/knowledge/reading.md) — `read` の使い方と止まったときの表
 - [作品定義の仕様](docs/knowledge/project-definition.md) — `project.yaml` に書けるキー
 - [イディオム集](docs/knowledge/idioms/README.md) — 日常語とブロック構成の組
-- [ブロック解説](docs/knowledge/blocks/README.md) — core 9 カテゴリとペン、覆わない範囲
+- [ブロック解説](docs/knowledge/blocks/README.md) — core 9 カテゴリとペンとブロック定義、覆わない範囲
 - [作業書](docs/tasks/) — 変更ごとの計画と作業記録
 
 ## エージェントから使う
@@ -82,10 +82,15 @@ node src/cli.ts knowledge --check
 | Windows x64 / Node 24 | 開発機で常用（下の注記を見る）|
 | Linux x64 / Node 24 | CI で毎回 |
 
-**Windows では `npm test` の終了コードを合否に使えない。** 読み取りの検査
-（`test/read-output.test.ts`）がプロセスの終了時に落ちるため、中身がすべて通っていても
-非 0 を返す。合否は集計行（`ℹ pass` と `ℹ fail`）で読む。CI は Linux だけを回すので、
-この症状は CI に出ない。裏を返すと、**Windows 固有の退行を機械で捕まえる経路が無い**。
+**Windows では読み取りの検査が途中で落ち、集計も信用できない。**
+`test/read-output.test.ts` の 21 件目で Node のプロセスごと落ちるため、**そのファイルの
+60 件のうち 40 件が一度も走らない**。集計は失敗を 1 件としか数えないので、走っていない
+40 件は数字に現れない ── 合計を見て「1 件だけ落ちている」と読むと、守備範囲の 3 分の 2 が
+空いたまま緑に見える。測り方と `main` での再現は
+[記録](docs/records/20260903_read-output-tests-crash-midway.md)にある。
+
+CI は Linux だけを回すのでこの症状は出ないが、裏を返すと **Windows 固有の退行を機械で
+捕まえる経路が無い**。
 
 `engines` は Node 26 以降も許すが、26 を回す検証は無い。linux-arm64 や musl（Alpine）では
 canvas の prebuild が無く、cairo・pango 等の system library が要る。

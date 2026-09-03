@@ -26,7 +26,7 @@ import {
   stemsFor,
   summaryOf,
 } from "../src/read.ts"
-import { ESCAPES, placeAll } from "../src/cli.ts"
+import { ESCAPES, placeAll, stagingPrefix as stagingPrefixOf } from "../src/cli.ts"
 import { identifiersOf } from "../src/roundtrip.ts"
 import { ourSb3, ourSb3File, projectJsonIn } from "./fixtures.ts"
 
@@ -669,12 +669,39 @@ test("書き出しの途中で失敗したとき、置き場に何も残らな�
   assert.deepEqual(readdirSync(nest), [], "一時ディレクトリを残した")
 })
 
+test("一時ディレクトリの名前が ASCII に閉じる", () => {
+  // Node 24.12.0 は、非 ASCII の名前を持つディレクトリを `rmSync` で消すとプロセスごと
+  // 落ちる（例外を投げず catch にも入らない）。巻き戻しはこの名前を消すので、置き場の
+  // 名前がそのまま入ると、日本語の名前を付けた利用者だけが黙って落ちる。
+  // 実際にこのファイルの 23 件目がその経路を通り、60 件のうち 40 件が走っていなかった
+  const 置き場 = [
+    "plain",
+    "置き場",
+    String.fromCodePoint(0x1f600),
+    "Ж",
+    "混ぜた 名前 with spaces",
+  ]
+  for (const name of 置き場) {
+    const prefix = stagingPrefixOf(join("親", name))
+    assert.match(prefix, /^[ -~]+$/, `ASCII に閉じていない: ${JSON.stringify(prefix)}`)
+  }
+
+  // 置き場ごとに違う名前になる。同じにすると、別の置き場の残骸を数えてしまう
+  const marks = new Set(置き場.map(name => stagingPrefixOf(join("親", name))))
+  assert.equal(marks.size, 置き場.length, "違う置き場が同じ名前を使っている")
+
+  // 同じ置き場なら毎回同じ名前になる。変わると前の実行の残骸を数えられない
+  assert.equal(stagingPrefixOf(join("親", "置き場")), stagingPrefixOf(join("親", "置き場")))
+})
+
 test("前の実行が残した一時ディレクトリを、消さずに知らせる", async () => {
   // 残るのは強制終了されたときだけで、そのときは申告も出せない。ドット始まりのうえ
   // 置き場の検分は親を見ないので、放っておくと出力 1 回分ずつ見えないまま積もる
   const parent = mkdtempSync(join(tmpdir(), "gen-scratch-orphan-"))
   const out = join(parent, "置き場")
-  const orphan = join(parent, ".置き場.tmp-99999")
+  // 名前の頭は実装と同じ規則で組む。字面を写すと、実装が規則を変えたとき検査は
+  // 「残骸を 1 件も見つけない」側へ倒れて緑のまま通る
+  const orphan = join(parent, `${stagingPrefixOf(out)}99999`)
   mkdirSync(orphan, { recursive: true })
   writeFileSync(join(orphan, "summary.md"), "前の実行の組み上がり")
 
@@ -1069,7 +1096,7 @@ test("要約の升が、markdown として意味を持つ文字を逃がす", as
   const name = `ネ|コ${String.fromCharCode(96)}<b>${String.fromCharCode(92)}`
   const reading = readingOf({
     targets: [
-      { name, stem: "x", isStage: false, scripts: [], variables: {}, lists: {}, broadcasts: [], placement: {} },
+      { name, stem: "x", isStage: false, scripts: [], variables: {}, lists: {}, broadcasts: [], warped: [], placement: {} },
     ],
     used: [],
     problems: [],
@@ -1388,6 +1415,7 @@ test("要約の升から、活きたリンクが立たない", async () => {
           variables: {},
           lists: {},
           broadcasts: [],
+          warped: [],
           placement: {},
         },
       ],

@@ -34,7 +34,7 @@ import { reasonOf } from "./errors.ts"
 import { defaultCostume } from "./costume.ts"
 import { extensionIdOf } from "../catalog/extensions.ts"
 import { lineFinder, readNotation } from "./parse.ts"
-import { serializeScripts } from "./serialize.ts"
+import { asProccode, serializeScripts } from "./serialize.ts"
 
 /**
  * project.json の meta。`semver` は `3.x.y` の形を要求される。
@@ -178,6 +178,104 @@ export async function buildProject(
   }
 }
 
+/** 内部の綴りを記法の形へ戻す。申告の手掛かりに使う */
+function asNotation(proccode: string): string {
+  let index = 0
+  return proccode.replace(/%s/g, () => `(引数${(index += 1)})`)
+}
+
+/**
+ * 定義が挙げた「再描画しないブロック」の名前を読む。
+ *
+ * 要素が文字列でないときは申告してその項を落とす。既定へ倒すと、書き間違えた
+ * 指定が黙って効かないまま生成が成功する。
+ *
+ * 入れ物自体が並びでない場合はここで見ない ―― キーの型は `TARGET_KEYS` から引く
+ * 共通の検査が既に見ており、ここでも見ると同じ書き間違いへ申告が 2 件並ぶ。
+ */
+function warpedNames(source: unknown, at: string, problems: Problem[]): string[] {
+  const listed = asMapping(source)?.再描画しないブロック
+  if (!Array.isArray(listed)) return []
+  const names: string[] = []
+  for (const [index, value] of listed.entries()) {
+    if (typeof value !== "string" || value === "") {
+      problems.push({
+        kind: "再描画しないブロックの書き方が違う",
+        subject: `${at}: ${index + 1} 件目`,
+        detail: "ブロック定義の名前を文字列で書く",
+      })
+      continue
+    }
+    // 記法へ書いたのと同じ形で受け、内部の綴りへ直す。`%s` を書かせない
+    names.push(asProccode(restored(value)))
+  }
+  return names
+}
+
+/**
+ * 挙げた名前が記法に無ければ止める。
+ *
+ * 綴りを取り違えると、指定したつもりの定義が再描画する側のまま生成され、しかも生成は
+ * 成功する。速さのために書いた指定なので、効かないまま動くのが一番わるい。
+ */
+function missingWarped(
+  warped: string[],
+  defined: Set<string>,
+  at: string,
+  problems: Problem[],
+): void {
+  // 手掛かりは挙げた名前に依らない。ループの外で 1 度だけ組む ── 中で組むと、
+  // 挙げた件数 × 定義の件数だけ同じ文字列を作り直す
+  const detail =
+    defined.size === 0
+      ? "この記法はブロック定義を 1 つも持たない"
+      : `記法が定義するのは ${[...defined].map(asNotation).join(" / ")}`
+
+  for (const spell of warped) {
+    if (defined.has(spell)) continue
+    problems.push({
+      kind: "再描画しないブロックの名前が記法に無い",
+      // 書いたものと見比べられるよう、記法の形へ戻して出す。内部の綴り（`%s`）は
+      // Scratch の画面にも作品定義にも現れない
+      subject: `${at}: ${asNotation(spell)}`,
+      detail,
+    })
+  }
+}
+
+/**
+ * 定義がスクリプトの途中に置かれていないかを見る。
+ *
+ * `定義` は帽子なので、解析器はそこで新しいスクリプトを始める。前のブロックの続きの
+ * つもりで書くと**前のスクリプトが中身を失い**、旗を押しても何も起きない .sb3 が
+ * 申告 0 件で出る（CP6 で実測）。空行が同じようにスクリプトを割ることは手順書が
+ * 断っているが、`定義` の側は誰も断っていなかった。
+ *
+ * 見るのは記法の行である。解析した後では既に割れており、割れた理由が残らない。
+ *
+ * `catalog` から綴りを引く。手書きすると、上流が接頭辞を変えたとき黙って外れる
+ */
+function splitByDefine(code: string, catalog: LoadedCatalog, at: string): Problem[] {
+  const define = catalog.byIdentifier.get("PROCEDURES_DEFINITION")?.ja
+  // 綴りを引けないなら見ない。台帳の側の破れは別の申告が拾う
+  if (!define) return []
+
+  const found: Problem[] = []
+  const lines = code.split("\n")
+  for (const [index, line] of lines.entries()) {
+    if (index === 0) continue
+    if (!line.trimStart().startsWith(define)) continue
+    if (lines[index - 1].trim() === "") continue
+    found.push({
+      kind: "定義がスクリプトの途中にある",
+      subject: `${at}: ${index + 1} 行目`,
+      detail: "`定義` は帽子なので、ここでスクリプトが割れて前の続きが切り離される。"
+        + "1 行空ける",
+    })
+  }
+  return found
+}
+
 /**
  * ターゲット 1 つぶんの記法を解析して直列化する。
  *
@@ -192,10 +290,17 @@ async function scriptsOf(
   broadcasts: Map<string, string>,
   problems: Problem[],
 ): Promise<Record<string, any>> {
-  const file = asMapping(source)?.スクリプト
-  if (!file) return {}
-
   const at = placeIn(isStageName(name) ? "ステージ" : "スプライト", { name: shownName(name) })
+  // 記法はスクリプトしか表せないので、画面を再描画しない指定は定義が持つ
+  const warped = warpedNames(source, at, problems)
+
+  const file = asMapping(source)?.スクリプト
+  if (!file) {
+    // スクリプトが無ければ定義も無い。ここで見ないと、この指定だけが黙って消える
+    missingWarped(warped, new Set(), at, problems)
+    return {}
+  }
+
   const outside = scriptPathProblem(dir, String(file))
   if (outside) {
     problems.push({ ...outside, subject: `${at}: ${file}` })
@@ -220,10 +325,40 @@ async function scriptsOf(
     return {}
   }
 
+  problems.push(...splitByDefine(code, catalog, at))
+
   const { blocks, problems: found } = serializeScripts(doc, {
     catalog,
     names: names(name, declared, broadcasts),
+    warped,
   })
+
+  // プロトタイプの綴りだけを見る。触る 2 欄を型で述べる
+  type Prototype = { opcode?: string, mutation?: { proccode?: string } }
+  const spells = Object.values<Prototype>(blocks)
+    .filter(block => block.opcode === "procedures_prototype")
+    .map(block => String(block.mutation?.proccode ?? ""))
+  const defined = new Set(spells)
+
+  // 同じ綴りの定義が 2 つあると、Scratch はどちらを呼ぶかを綴りだけで決められない。
+  // 生成物は成立し公式検証器も通るので、開くまで気づけない。`再描画しないブロック` の
+  // 指定も両方に掛かる
+  if (defined.size < spells.length) {
+    const seen = new Set<string>()
+    for (const spell of spells) {
+      if (!seen.has(spell)) {
+        seen.add(spell)
+        continue
+      }
+      problems.push({
+        kind: "同じ綴りのブロック定義が 2 つある",
+        subject: `${at}: ${asNotation(spell)}`,
+        detail: "呼び出しがどちらの定義に結び付くかを決められない。綴りを分ける",
+      })
+    }
+  }
+
+  missingWarped(warped, defined, at, problems)
 
   // 直列化は行を持たない。ブロックの綴りから入力の行を引き直して報告に添える。
   // 認識できない記述もここに含まれる（識別子を持たないブロックとして現れる）ため、

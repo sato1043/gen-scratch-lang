@@ -81,6 +81,17 @@ export const PROVENANCE: Source[] = [
       "scratch-vm は 24MB あり、この 10 件のために依存へ加えない",
   },
   {
+    表: "PROCEDURE_COMMANDS",
+    種別: "手書き",
+    出典: "scratchblocks の解析結果を実測して起こした",
+    版: "3.7.1",
+    確認した現行版: "2.1.19",
+    理由:
+      "カスタムブロックの記法は上流の定義表に無い。`定義` は表を通らず構文として" +
+      "解析され、2026-09-03 の実測で custom のカテゴリは 233 件中 0 件だった。" +
+      "opcode と引数名は scratch-blocks に在るので、記法の側だけを手で持つ",
+  },
+  {
     表: "CORE_EXTENSIONS",
     種別: "別出典",
     出典: "scratch-vm の src/serialization/sb3.js（getExtensionIdForOpcode）",

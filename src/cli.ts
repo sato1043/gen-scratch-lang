@@ -15,6 +15,7 @@ import {
   rmdirSync,
   writeFileSync,
 } from "node:fs"
+import { createHash } from "node:crypto"
 import { basename, dirname, extname, join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { normalized } from "./notation.ts"
@@ -481,9 +482,19 @@ function occupancyOf(dir: string): { error: import("./errors.ts").Problem } | { 
  * 一時ディレクトリの名前の頭。組む側と数える側で 1 つに保つ。
  *
  * 2 か所へ別々の綴りで置くと、片方を動かしたときに残骸を数える側が黙って外れる。
+ *
+ * **ASCII に閉じる。** Node 24.12.0 は、非 ASCII の名前を持つディレクトリを `rmSync` で
+ * 消すとプロセスごと落ちる（この機械で実測。例外を投げず `catch` にも入らない。詳細は
+ * `docs/records/20260903_rmsync-crashes-on-non-ascii-dir.md`）。巻き戻しはこの名前の
+ * ディレクトリを消すので、置き場の名前をそのまま使うと**日本語の名前を付けた利用者
+ * だけが、申告の出るはずの場面で黙って落ちる**。
+ *
+ * 置き場の名前を短い要約に替えて持つ。名前をそのまま使っていたのは、どの置き場の残骸か
+ * を見分けるためだけなので、見分けがつけば綴りは要らない。
  */
-function stagingPrefix(dir: string): string {
-  return `.${basename(dir)}.tmp-`
+export function stagingPrefix(dir: string): string {
+  const mark = createHash("sha256").update(basename(dir)).digest("hex").slice(0, 8)
+  return `.gen-scratch-${mark}.tmp-`
 }
 
 /**

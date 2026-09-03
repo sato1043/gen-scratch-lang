@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { PROVENANCE } from "../catalog/provenance.ts"
-import { buildCatalog } from "../tools/build-catalog.ts"
+import { FINGERPRINTED, buildCatalog } from "../tools/build-catalog.ts"
 import { loadCatalog } from "../src/catalog.ts"
 
 /**
@@ -20,6 +20,18 @@ test("台帳が、上流から書き出し直せない表を出典つきで申�
 
   // 導出できる表は照合で見張るので、この欄には出さない（実測 2026-08-18: 8 件中 7 件）
   assert.equal(declared.length, PROVENANCE.length - 1)
+
+  // 指紋が畳む表と、出典を名乗る表を突き合わせる。両辺が PROVENANCE 由来だと、表を
+  // 足して申告し忘れても永久に緑になる（2026-09-03 に実際に 1 表が漏れた）。
+  // 例外表は引数で渡るので指紋の側に無く、選択肢の対応は照合で見張るので出典の側に無い
+  const fingerprinted = new Set(Object.keys(FINGERPRINTED))
+  const claimed = new Set(PROVENANCE.map(source => source.表.replace(/（.*）$/, "")))
+  const unclaimed = [...fingerprinted].filter(name => !claimed.has(name))
+  assert.deepEqual(
+    unclaimed,
+    [],
+    "指紋へ入れたのに出典を名乗っていない表がある。PROVENANCE へ足す",
+  )
   assert.ok(
     declared.every(source => source.種別 !== "導出"),
     "照合で見張れる表が、見張れない側へ紛れている",

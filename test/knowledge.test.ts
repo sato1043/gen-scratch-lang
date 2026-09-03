@@ -9,6 +9,7 @@ import {
   OPTIONS_INLINE_LIMIT,
   UNKNOWN_NOTATION,
   UNRESOLVED_ARGUMENTS,
+  USER_DEFINED_ARGUMENTS,
   WARNED,
   categoryTable,
   choicesOf,
@@ -48,7 +49,10 @@ function listRows(table: string): string[] {
   return table
     .split(DEFERRED_HEADING)[0]
     .split("\n")
-    .filter(line => line.startsWith("| `"))
+    // 本体行を許される形で選ぶ。2 列目の opcode はバッククォート括りの小文字と決まって
+    // おり、見出しも区切りもその形を持たない。記法の列で絞ると、綴りを利用者が決める
+    // ブロックの行が漏れる（そちらはバッククォートで始まらない）
+    .filter(line => /^\| [^|]+ \| `\w+` \|/.test(line))
 }
 
 /**
@@ -66,6 +70,10 @@ const COVERAGE = {
   variables: 4,
   list: 11,
   pen: 9,
+  // 定義の帽子と呼び出しの 2 つ。呼び出しの綴りは利用者が決めるので台帳に名前を持たない
+  custom: 2,
+  // 引数の参照 1 つ。宣言の側はプロトタイプの中に現れるもので、独立した項を持たない
+  "custom-arg": 1,
 }
 
 test("解説が扱うカテゴリを覆い、全ブロックを一覧に載せる", () => {
@@ -79,9 +87,20 @@ test("解説が扱うカテゴリを覆い、全ブロックを一覧に載せ�
   for (const [category, count] of Object.entries(COVERAGE)) {
     const rows = listRows(categoryTable(catalog.raw, category))
     assert.equal(rows.length, count, `${category} の件数が合わない`)
+
+    // 記法の列に許される形を全カテゴリで数える。行を選ぶ側は opcode の列で絞るので、
+    // 記法の列が崩れても件数は動かない。許される側（綴りか、綴りを持たない旨）を
+    // 挙げて、それ以外が入ったら落とす
+    for (const row of rows) {
+      const spelling = row.split("|")[1].trim()
+      assert.ok(
+        /^`.+`$/.test(spelling) || spelling === "利用者が決める",
+        `${category} の記法の列が想定の形でない: ${spelling}`,
+      )
+    }
     total += rows.length
   }
-  assert.equal(total, 128, "台帳 128 件が解説へ載っていない")
+  assert.equal(total, 131, "台帳 131 件が解説へ載っていない")
 })
 
 test("一覧の各行が記法と opcode と形と引数を持つ", () => {
@@ -285,14 +304,24 @@ test("引数を解けないブロックの件数を、台帳と一覧の両方�
   const unresolved = catalog.raw[CATALOG_KEYS.BLOCKS].filter(
     (block: any) => block.args === null,
   )
-  assert.equal(unresolved.length, 2, "引数を解けないブロックの数が変わった")
+  // `args: null` は 2 つの意味を運ぶ。上流の定義が空で読めない 2 件（記法からも
+  // 書けない）と、引数を利用者が決める 3 件（記法からは書ける）である
+  assert.equal(unresolved.length, 5, "引数を解けないブロックの数が変わった")
+  const 取れない = unresolved.filter((block: any) => block.argsBy === null)
+  const 利用者 = unresolved.filter((block: any) => block.argsBy === "利用者")
+  assert.equal(取れない.length, 2, "引数を導けないブロックの数が変わった")
+  assert.equal(利用者.length, 3, "引数を利用者が決めるブロックの数が変わった")
 
-  // 一覧の側にも同じ数だけ出ていることを見る。台帳で数えるだけでは、一覧が
-  // その旨を出しているかまでは分からない
-  const shown = CATEGORIES.map(({ key }) => categoryTable(catalog.raw, key))
-    .join("\n")
-    .split(UNRESOLVED_ARGUMENTS).length - 1
-  assert.equal(shown, unresolved.length, "一覧に出る数が台帳と合わない")
+  // 一覧の側にも、それぞれ同じ数だけ出ていることを見る。台帳で数えるだけでは、
+  // 一覧が**どちらの文で**出しているかまでは分からない ── 混ぜると、記法から
+  // 書けるブロックへ「記法からは書けない」と刷る（CP6 で実測）
+  const 一覧 = CATEGORIES.map(({ key }) => categoryTable(catalog.raw, key)).join("\n")
+  assert.equal(一覧.split(UNRESOLVED_ARGUMENTS).length - 1, 取れない.length)
+  assert.equal(一覧.split(USER_DEFINED_ARGUMENTS).length - 1, 利用者.length)
+
+  // 2 つの文が別物であることまで見る。同じ綴りにすると上の 2 つが両方通り、
+  // 見分けが付かないまま緑になる
+  assert.notEqual(UNRESOLVED_ARGUMENTS, USER_DEFINED_ARGUMENTS)
 })
 
 test("台帳のどの引数も、解けない綴りとして一覧に出ない", () => {

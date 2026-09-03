@@ -73,14 +73,14 @@ test("既定値が実装と独立に固定されている", () => {
   assert.equal(withFallback.length, Object.keys(FALLBACKS).length)
 })
 
-test("定義に書けるキーは 11 個で、同じキーを二重に数えない", () => {
+test("定義に書けるキーは 12 個で、同じキーを二重に数えない", () => {
   // 件数は実装から借りず書き下す。借りると、実装がキーを落としたとき検査も一緒に縮む
-  assert.equal(definitionKeyCount(), 11)
+  assert.equal(definitionKeyCount(), 12)
 
-  // 最上位 3 + ステージ 3 + スプライト 9 = 15。名前・スクリプト・変数・リストが
-  // 2 か所に出るため、場所ごとの合計はキーの数より 4 多い
+  // 最上位 3 + ステージ 4 + スプライト 10 = 17。名前・スクリプト・変数・リスト・
+  // 再描画しないブロックが 2 か所に出るため、場所ごとの合計はキーの数より 5 多い
   const total = LEVELS.reduce((sum, level) => sum + Object.keys(level.keys).length, 0)
-  assert.equal(total, 15)
+  assert.equal(total, 17)
 })
 
 test("一覧が 3 つの場所すべてを見出しつきで載せる", () => {

@@ -63,10 +63,20 @@ export type Entry = {
   inputs: string[]
   /** 引数。取れなければ null */
   args: CatalogArgument[] | null
+  /**
+   * `args` が null である理由。`利用者` は引数の数も名前も利用者が決めるためで、
+   * 記法からは書ける。null は台帳が導けなかったことを意味し、記法からも書けない。
+   * **同じ null を 2 つの意味で使うので、読む側はこの欄で分ける。**
+   */
+  argsBy: "利用者" | null
   /** 同じ記法が中身の形によって取る別の opcode と、その引数 */
   alsoCovers: { opcode: string; args: CatalogArgument[] | null }[]
   /** opcode の出どころ */
-  opcodeFrom: "定義" | "例外表"
+  /**
+   * opcode をどこから得たか。`定義` は上流からの導出で、照合が見張る。残る 2 つは
+   * 機械で導いていないので、上流が動いても検知できない
+   */
+  opcodeFrom: "定義" | "例外表" | "手書きの表"
 }
 
 /**

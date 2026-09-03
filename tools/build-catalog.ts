@@ -22,6 +22,7 @@ import { readFileSync } from "node:fs"
 import commands from "scratchblocks/syntax/commands.js"
 import { EXCEPTIONS } from "../catalog/exceptions.ts"
 import { CORE_EXTENSIONS, EXTENSION_DEFINITIONS } from "../catalog/extensions.ts"
+import { PROCEDURE_COMMANDS } from "../catalog/procedures.ts"
 import {
   MENU_OPTIONS,
   NAME_KINDS,
@@ -61,7 +62,7 @@ export const CORE_CATEGORIES = [
  * 側が決めた区分で、こちらはこの環境が扱うと決めた範囲である。pen を足したのは
  * TASK0024（線を引く手段が無いと絵を描く作品が作れないため）。
  */
-export const LISTED_CATEGORIES = [...CORE_CATEGORIES, "pen"]
+export const LISTED_CATEGORIES = [...CORE_CATEGORIES, "pen", "custom", "custom-arg"]
 
 /** 台帳が扱うブロックの opcode の接頭辞。台帳から到達しない opcode を数えるのに使う */
 const LISTED_PREFIXES = [
@@ -74,6 +75,8 @@ const LISTED_PREFIXES = [
   "operator_",
   "data_",
   "pen_",
+  "procedures_",
+  "argument_",
 ]
 
 /**
@@ -138,7 +141,23 @@ export function buildCatalog({
     duplicate: [],
   }
 
-  for (const command of commands) {
+  // 手書きの項を同一性で覚える。上流の項と手書きの項では、扱わないカテゴリの意味が
+  // 逆になる（前者は対象外、後者は綴り違い）
+  const handwritten = new Set<unknown>(PROCEDURE_COMMANDS)
+
+  // カスタムブロックは上流の定義表に無い（`定義` は表を通らず構文として解析される）。
+  // ここで合流させないと、記法から読めるのに台帳へ載らない状態が残る
+  for (const command of [...commands, ...PROCEDURE_COMMANDS]) {
+    // 上流の項に対しては「扱わないカテゴリを飛ばす」だが、手書きの項に対しては
+    // 綴り違いである。飛ばすと台帳から 1 件消えるのに申告が 0 件になる
+    if (handwritten.has(command) && !LISTED_CATEGORIES.includes(command.category)) {
+      problems.push({
+        kind: "手書きの項が扱わないカテゴリを名乗る",
+        subject: command.id ?? command.selector,
+        detail: `カテゴリ ${command.category} は台帳の扱う範囲に無い`,
+      })
+      continue
+    }
     if (!LISTED_CATEGORIES.includes(command.category)) continue
 
     const key = command.id ?? command.selector
@@ -155,8 +174,10 @@ export function buildCatalog({
       continue
     }
 
-    // 例外表は opcode を書かずに引数だけを直すことがある。書いていなければ導く
-    const opcode = exception?.opcode ?? resolve(command, byIdentifier, problems)
+    // 例外表は opcode を書かずに引数だけを直すことがある。書いていなければ導く。
+    // 手書きの項は上流の定義表に無いため識別子から導けず、自分の行が opcode を持つ
+    const opcode =
+      exception?.opcode ?? command.opcode ?? resolve(command, byIdentifier, problems)
     if (!opcode) continue
 
     if (!byOpcode.has(opcode)) {
@@ -186,14 +207,24 @@ export function buildCatalog({
       spec: command.spec,
       ja: ja[command.id] ?? null,
       inputs,
-      args: empty
-        ? null
-        : pair(opcode, key, inputs, definition.args, known, problems),
+      // 手書きの項は自分の行が引数を宣言する。上流に引数があっても、記法の側から
+      // 組み立てる経路が無ければ解けたことにならない
+      args:
+        command.args !== undefined
+          ? command.args
+          : empty
+            ? null
+            : pair(opcode, key, inputs, definition.args, known, problems),
+      // `args: null` は 2 つの理由で立つ ── 引数を導けない（記法からも書けない）のと、
+      // 引数を**利用者が決める**（記法からは書ける）のと。読む側が区別できないと、
+      // 後者へ「記法からは書けない」と刷ってしまう（CP6 で実測）
+      argsBy: command.argsBy ?? null,
       alsoCovers: (exception?.alsoCovers ?? []).map((covered: string) =>
         cover(covered, key, inputs, byOpcode, known, problems),
       ),
-      // 引数だけを直す例外もあるので、opcode を書いた例外だけが出どころになる
-      opcodeFrom: exception?.opcode ? "例外表" : "定義",
+      // opcode の出どころは 3 通りある。例外表・手書きの項・上流からの導出で、
+      // 2 値で持つと手書きの分が「導出」を名乗り、照合で見張れている顔になる
+      opcodeFrom: exception?.opcode ? "例外表" : command.opcode ? "手書きの表" : "定義",
     })
   }
 
@@ -223,7 +254,13 @@ export function buildCatalog({
         台帳: blocks.length,
         "opcode を例外表から得た": blocks.filter(b => b.opcodeFrom === "例外表")
           .length,
-        "引数名を取れない": blocks.filter(b => b.args === null).length,
+        // 機械で導いていない opcode を棚卸しするとき、例外表だけを数えると手書きの
+        // 表から来た分が導出済みの側に混ざる
+        "opcode を手書きの表から得た": blocks.filter(
+          b => b.opcodeFrom === "手書きの表",
+        ).length,
+        "引数名を取れない": blocks.filter(b => b.args === null && b.argsBy === null).length,
+        "引数を利用者が決める": blocks.filter(b => b.argsBy === "利用者").length,
       },
       [CATALOG_KEYS.BLOCKS]: blocks,
       [CATALOG_KEYS.SCOPE]: uncovered(blocks, definitions, excluded),
@@ -542,8 +579,14 @@ function uncovered(
     "ブロックでない記法": excluded["not-a-block"],
     "今の Scratch で置けない記法": excluded.legacy,
     "綴りが衝突して呼べない記法": excluded.duplicate,
+    // 引数を利用者が決める 3 件は除く。台帳が引数を持たない点は同じだが、意味が逆で
+    // ある ── 記法からは書ける。混ぜると「記法から書けないブロック」の一覧が偽になる
     "引数名を取れないブロック": blocks
-      .filter(b => b.args === null)
+      .filter(b => b.args === null && b.argsBy === null)
+      .map(b => ({ identifier: b.identifier, opcode: b.opcode })),
+    // 引数を利用者が決めるので台帳が持てないぶん。記法からは書ける
+    "引数を利用者が決めるブロック": blocks
+      .filter(b => b.argsBy === "利用者")
       .map(b => ({ identifier: b.identifier, opcode: b.opcode })),
     // 機械で書き出せず手で補ったぶん
     // 名前を併せ持つ入力は「補足と名前の併用」になる。出所で見ずに補足を含むかで数える
@@ -620,6 +663,7 @@ export const FINGERPRINTED = {
   SHADOWS,
   EXTENSION_DEFINITIONS,
   CORE_EXTENSIONS,
+  PROCEDURE_COMMANDS,
 }
 
 function handwrittenFingerprint(exceptions: typeof EXCEPTIONS): string {
@@ -627,11 +671,28 @@ function handwrittenFingerprint(exceptions: typeof EXCEPTIONS): string {
   return createHash("sha256").update(JSON.stringify(tables)).digest("hex").slice(0, 12)
 }
 
+/** 日本語辞書は不変なので 1 度だけ読む。`readDefinitions()` と同じ形 */
+let japanese: Record<string, string> | null = null
+
 function loadJapanese(): Record<string, string> {
+  if (japanese) return japanese
   const locale = JSON.parse(
     readFileSync(require.resolve("scratchblocks/locales/ja.json"), "utf8"),
   )
-  return locale.commands
+  // カスタムブロックの定義は辞書の commands に無い。上流は接頭辞（`定義`）だけを
+  // 別のキーで持つので、そこから綴りを組む。手書きの訳を置くより上流の版に追随する。
+  // 上流がこのキーを失えば綴りが消えるが、投げずに null を通す ── この関数の
+  // 呼び出し側は整合の破れを問題として集める契約で、例外を投げると台帳の組み立て
+  // ごと落ちて他の申告も失われる
+  const prefix = Array.isArray(locale.definePrefix) ? locale.definePrefix[0] : undefined
+  const loaded = {
+    ...locale.commands,
+    ...(typeof prefix === "string" && prefix !== ""
+      ? { PROCEDURES_DEFINITION: prefix }
+      : {}),
+  }
+  japanese = loaded
+  return loaded
 }
 
 /**

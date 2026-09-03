@@ -170,6 +170,8 @@ type ReadTarget = {
   lists: Record<string, unknown>
   /** 宣言されたメッセージの名前 */
   broadcasts: string[]
+  /** 画面を再描画しない指定を持つブロック定義の名前。記法の形で持つ */
+  warped: string[]
   /** 位置・大きさ・向き・表示。ステージは持たない */
   placement: Record<string, unknown>
 }
@@ -442,6 +444,7 @@ async function readWith(
       variables: variables.values,
       lists: lists.values,
       broadcasts: Object.keys(broadcasts.values),
+      warped: warpedIn(target),
       placement: placementOf(target),
     })
   }
@@ -1770,6 +1773,7 @@ export function definitionOf(reading: Reading, name: string): Record<string, unk
     ...(target.scripts.length > 0 ? { スクリプト: `${target.stem}.sbk` } : {}),
     ...(Object.keys(target.variables).length > 0 ? { 変数: target.variables } : {}),
     ...(Object.keys(target.lists).length > 0 ? { リスト: target.lists } : {}),
+    ...(target.warped.length > 0 ? { 再描画しないブロック: target.warped } : {}),
   })
 
   return {
@@ -1781,6 +1785,36 @@ export function definitionOf(reading: Reading, name: string): Record<string, unk
       ...placed(target.placement),
     })),
   }
+}
+
+/**
+ * 画面を再描画しない指定を持つブロック定義を集める。
+ *
+ * `warp` はプロトタイプの mutation が持つ。記法はこの指定を表せないので、書き出す
+ * 作品定義の側へ移さないと往復で消える。
+ *
+ * 綴りは記法の形へ戻す。内部の綴り（`%s`）で書き出すと、組み立て直すときに利用者が
+ * 記法から写せない形になる。
+ */
+function warpedIn(target: unknown): string[] {
+  const blocks = asKeyed(asKeyed(target)?.blocks) ?? {}
+  const names = new Set<string>()
+  for (const block of Object.values(blocks)) {
+    const entry = asKeyed(block)
+    if (entry?.opcode !== "procedures_prototype") continue
+    const mutation = asKeyed(entry.mutation)
+    if (String(mutation?.warp) !== "true") continue
+    // 綴りは他人の .sb3 から来る。記法へ載る綴りと同じ守りを通す ── 通さないと
+    // 右横書きの上書き（U+202E）や印の括弧が作品定義へ生で出て、同じ 1 回の
+    // 読み取りが書く 2 つの成果物で守りが割れる（CP6 で実測）
+    const proccode = spelled(String(mutation?.proccode ?? ""))
+    if (proccode === "") continue
+    let index = 0
+    // 同じ綴りの定義が 2 つあっても作品定義には 1 度だけ載せる。並びで持つと
+    // 「2 つ挙げた」ように読めるが、指定は綴りに掛かるので重複に意味が無い
+    names.add(proccode.replace(/%[sbn]/g, () => `(引数${(index += 1)})`))
+  }
+  return [...names]
 }
 
 /**

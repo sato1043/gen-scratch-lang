@@ -136,6 +136,13 @@ export const TARGET_KEYS: Record<string, KeySpec> = {
       `省略すると ${JSON.stringify(LIST_FALLBACK)} になる`,
     omitted: "リストを宣言しない",
   },
+  再描画しないブロック: {
+    type: "並び",
+    effect:
+      "実行中に画面を再描画しないブロック定義の名前。重い描画をフレーム数の縛りから" +
+      "外す。記法はスクリプトしか表せないので、この指定は定義が持つ",
+    omitted: "どの定義も 1 巡ごとに画面を更新する（Scratch のエディタと同じ既定）",
+  },
 }
 
 /** スプライトに書けるキー */

@@ -51,10 +51,19 @@ const CORE = [
 ]
 const CORE_COUNT = 127
 
-/** 台帳が扱うカテゴリ。core 9 つに、扱うと裁定した拡張機能を足したもの */
-const LISTED = [...CORE, "pen"]
+/** 台帳が扱うカテゴリ。core 9 つに、扱うと裁定した拡張機能とブロック定義を足したもの */
+const LISTED = [...CORE, "pen", "custom", "custom-arg"]
 const PEN_COUNT = 13
-const LISTED_COUNT = 128
+
+/**
+ * 手書きの表が足す件数（定義の帽子・呼び出し・引数の参照）。
+ *
+ * 上流の定義表には現れないので、下の保存則で右辺へ足す。カテゴリの絞り込み自体は
+ * `LISTED` 1 つで行う ── 上流を数える母集団を別に持つと、新しいカテゴリを扱う範囲へ
+ * 足しても孤児検査がそれを一度も見ない状態になる
+ */
+const PROCEDURE_COUNT = 3
+const LISTED_COUNT = 131
 
 /** 例外表を差し替えて組み立て、出た問題の種別を返す */
 function kindsWith(exceptions: any[]) {
@@ -106,7 +115,9 @@ test("扱うカテゴリのブロックが 1 件残らず説明される", () =>
     catalog.覆わない範囲["ブロックでない記法"].length +
     catalog.覆わない範囲["今の Scratch で置けない記法"].length +
     catalog.覆わない範囲["綴りが衝突して呼べない記法"].length
-  assert.equal(catalog.ブロック.length + excluded, core.length)
+  // 手書きの表が足した分は上流の総数に含まれない。足さないと等式が崩れ、取りこぼしの
+  // 検出が「手続きを足した」ことに埋もれる
+  assert.equal(catalog.ブロック.length + excluded, core.length + PROCEDURE_COUNT)
 })
 
 test("台帳の指紋が、手書きの表を 1 つも取りこぼさない", () => {
@@ -120,6 +131,7 @@ test("台帳の指紋が、手書きの表を 1 つも取りこぼさない", ()
     "NAME_KINDS",
     "OPTIONS",
     "PRIMITIVES",
+    "PROCEDURE_COMMANDS",
     "SHADOWS",
     "SUPPLEMENT",
   ]
@@ -203,6 +215,7 @@ test("日本語ラベルと引数名が台帳に載る", () => {
       },
     ],
     alsoCovers: [],
+    argsBy: null,
     opcodeFrom: "定義",
   })
 
@@ -210,8 +223,19 @@ test("日本語ラベルと引数名が台帳に載る", () => {
   assert.equal(find("OPERATORS_ADD").opcode, "operator_add")
   assert.equal(find("CONTROL_WAITUNTIL").opcode, "control_wait_until")
 
-  const noLabel = catalog.ブロック.filter(b => !b.ja)
+  // 綴りを持てないのは、名前を利用者が決めるブロックに限る。それ以外が欠けたら失敗する
+  const noLabel = catalog.ブロック.filter(
+    b => !b.ja && !["custom", "custom-arg"].includes(b.category),
+  )
   assert.deepEqual(noLabel, [], "日本語ラベルの無いブロックが残っている")
+
+  // 上の絞り込みで何件を外したかを固定する。外した範囲を数えないと、綴りを持てる
+  // ブロックが増えても減っても気づけない
+  assert.deepEqual(
+    catalog.ブロック.filter(b => !b.ja).map(b => b.opcode),
+    ["procedures_call", "argument_reporter_string_number"],
+    "綴りを持たないブロックの顔ぶれが変わった",
+  )
 })
 
 test("引数を持たないブロックと、引数名を読めないブロックを混ぜない", () => {
@@ -223,10 +247,27 @@ test("引数を持たないブロックと、引数名を読めないブロッ�
   // sensing_of は中身を実行時に埋めるため読めない
   assert.equal(find("SENSING_OF").args, null)
 
+  // `args: null` は 2 つの意味を運ぶので、申告も 2 つに分ける。混ぜると
+  // 「記法からは書けない」という偽の文が公開ページへ出る（CP6 で実測）
   assert.deepEqual(
     catalog.覆わない範囲["引数名を取れないブロック"].map(b => b.identifier),
     ["EVENT_WHENBACKDROPSWITCHESTO", "SENSING_OF"],
   )
+  assert.deepEqual(
+    catalog.覆わない範囲["引数を利用者が決めるブロック"].map(b => b.identifier),
+    ["PROCEDURES_DEFINITION", "PROCEDURES_CALL", "getParam"],
+  )
+
+  // 意味の違いは `argsBy` が持つ。どちらの群も `args` は null なので、
+  // `args` だけを見る側は 2 つを見分けられない
+  assert.equal(find("SENSING_OF").argsBy, null)
+  assert.equal(find("PROCEDURES_CALL").argsBy, "利用者")
+
+  // 2 つの群が交わらないことまで見る。片方の判定を緩めると両方に出て、
+  // 件数の検査は合ったまま一覧だけが偽になる
+  const 取れない = catalog.覆わない範囲["引数名を取れないブロック"].map(b => b.identifier)
+  const 利用者 = catalog.覆わない範囲["引数を利用者が決めるブロック"].map(b => b.identifier)
+  assert.deepEqual(取れない.filter(id => 利用者.includes(id)), [])
 })
 
 test("入力ごとに敷く影ブロックが台帳に載る", () => {
