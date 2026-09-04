@@ -85,10 +85,28 @@ const UNKNOWN = "だれも知らない_opcode"
 async function sb3File(name: string, project: any): Promise<string> {
   const zip = new JSZip()
   zip.file("project.json", JSON.stringify(project))
+  // **ターゲットが名乗る素材も詰める。** project.json だけの .sb3 は「素材が入っていない」
+  // 作品であり、読み取りはそれを落として終了コード 1 を返す（正しい挙動）。器がその形を
+  // 作っていると、素材と関係ない検査まで落ちる側の経路を測ることになる
+  for (const target of project.targets ?? []) {
+    for (const asset of [...(target.costumes ?? []), ...(target.sounds ?? [])]) {
+      if (typeof asset?.md5ext === "string") zip.file(asset.md5ext, ASSET_BODY)
+    }
+  }
   const path = join(work, name)
   writeFileSync(path, await zip.generateAsync({ type: "nodebuffer" }))
   return path
 }
+
+/**
+ * 図のファイル名の形。`<幹>-<番号>.<形式>` で、素材（中身の md5）と見分ける。
+ *
+ * 素材と図は同じ置き場に同じ拡張子で並ぶので、拡張子だけで数えると素材まで図に数える。
+ */
+const FIGURE_NAME = /-\d+\.(svg|png)$/
+
+/** 器が詰める素材の中身。読み取りは中身を解釈しないので、形だけ整っていればよい */
+const ASSET_BODY = '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>'
 
 /**
  * schema を通るターゲットを組み立てる。渡した欄だけを差し替える。
@@ -198,7 +216,9 @@ test("スクリプトごとに図が出る。件数がスクリプト数と一�
   assert.equal(scripts, 4, "測る前提が崩れている（スクリプトの本数）")
   assert.notEqual(scripts, reading.targets.length, "本数とターゲット数が同じでは測れない")
 
-  const figures = readdirSync(out).filter(name => name.endsWith(".svg"))
+  // **拡張子だけでは数えられない。** 素材も同じ拡張子で同じ置き場に並ぶ（素材の名前は
+  // 中身の md5 で、図の名前は `<幹>-<番号>`）。図の名前の形で数える
+  const figures = readdirSync(out).filter(name => FIGURE_NAME.test(name))
   assert.equal(figures.length, scripts, "図の件数がスクリプトの本数と合わない")
 
   // 図が空でないことも見る。件数だけだと、寸法 0 の図を並べても緑になる
@@ -357,10 +377,16 @@ test("採番が重なる .sb3 で、記法も図も消えない", async () => {
     assert.ok(bodies.includes(`(${n}) 歩動かす`), `${n} 本目の記法が消えた`)
   }
 
-  // 報告する図の件数が、実際に置かれた枚数と一致する
-  const figures = readdirSync(out).filter(name => name.endsWith(".svg"))
+  // 報告する図の件数が、実際に置かれた枚数と一致する。**素材は数えない** ── 同じ置き場に
+  // 同じ拡張子で並ぶので、拡張子だけで数えると素材まで図に数える
+  const figures = readdirSync(out).filter(name => FIGURE_NAME.test(name))
   assert.match(done.stdout, new RegExp(`図 ${figures.length} 件`))
   assert.equal(figures.length, 3)
+
+  // 素材が実際に置かれていることも見る。0 件なら上の除外が何も測らない
+  const assets = readdirSync(out).filter(name => /^[0-9a-f]{32}\./.test(name))
+  assert.equal(assets.length, 1, "素材が置かれていない")
+  assert.match(done.stdout, new RegExp(`素材 ${assets.length} 件`))
 })
 
 test("--locale en を渡すと、記法が英語で出る", async () => {
@@ -460,7 +486,9 @@ test("壊れた .sb3 を、原因を示して終了コード 1 で止める", as
 })
 
 test("復元した定義から再生成した .sb3 が、識別子列として元と一致する", async () => {
-  // ブロック ID・座標・素材は往復で保存されない。判定の単位を識別子列に固定する
+  // ブロック ID と座標は往復で保存されない。判定の単位を識別子列に固定する。
+  // **素材はここには入らない** ── TASK0025 で保つ側へ移った（`asset-roundtrip.test.ts` が
+  // バイト列と属性の一致を測る）
   const out = join(work, "roundtrip")
   await run(process.execPath, [CLI, "read", await ourSb3File(), "--out", out])
 
@@ -512,10 +540,19 @@ test("復元した定義が、既定と同じ値を書かない", async () => {
   const reading = await readSb3(readFileSync(path), "測定")
   const definition = definitionOf(reading, "測定")
 
-  // 既定のままのスプライトは名前だけ。書いても意味は変わらないが、読み手が
-  // 「なぜこの値なのか」を問うことになる
-  assert.deepEqual((definition.スプライト as any[])[0], { 名前: "きほん" })
-  assert.deepEqual((definition.スプライト as any[])[1], { 名前: "ずらし", x: 42, 表示: false, 大きさ: 150 })
+  // 既定のままのスプライトは名前とコスチュームだけ。置かれ方を書いても意味は変わらないが、
+  // 読み手が「なぜこの値なのか」を問うことになる。**コスチュームは既定値ではなく、その
+  // ターゲットが実際に持っているもの**なので、既定と同じでも省かない（TASK0025）
+  const 素材 = {
+    コスチューム: [
+      { 名前: "costume1", ファイル: `${"0".repeat(32)}.svg`, rotationCenterX: 0, rotationCenterY: 0 },
+    ],
+  }
+  assert.deepEqual((definition.スプライト as any[])[0], { 名前: "きほん", ...素材 })
+  assert.deepEqual(
+    (definition.スプライト as any[])[1],
+    { 名前: "ずらし", ...素材, x: 42, 表示: false, 大きさ: 150 },
+  )
 })
 
 test("復元した定義が、変数とリストの初期値を持ち帰る", async () => {
@@ -1096,7 +1133,18 @@ test("要約の升が、markdown として意味を持つ文字を逃がす", as
   const name = `ネ|コ${String.fromCharCode(96)}<b>${String.fromCharCode(92)}`
   const reading = readingOf({
     targets: [
-      { name, stem: "x", isStage: false, scripts: [], variables: {}, lists: {}, broadcasts: [], warped: [], placement: {} },
+      {
+        name,
+        stem: "x",
+        isStage: false,
+        scripts: [],
+        variables: {},
+        lists: {},
+        broadcasts: [],
+        warped: [],
+        placement: {},
+        shown: { costumes: [], sounds: [], current: 1, dropped: [] },
+      },
     ],
     used: [],
     problems: [],
@@ -1417,6 +1465,7 @@ test("要約の升から、活きたリンクが立たない", async () => {
           broadcasts: [],
           warped: [],
           placement: {},
+          shown: { costumes: [], sounds: [], current: 1, dropped: [] },
         },
       ],
       used: [],
@@ -1649,7 +1698,10 @@ test("弾かれたまま読み進んだら、4 種の成果物すべてに断り
   const yaml = readFileSync(join(out, "project.yaml"), "utf8")
   assert.match(yaml, /--anyway で読み取った定義である/, "作品定義に断りが無い")
 
-  for (const name of files.filter(item => item.endsWith(".svg"))) {
+  // **素材は断りを持たない。** 中身を 1 バイトも変えないのが不変条件で（往復で元と同じ
+  // バイト列に戻る）、断りを差し込めばそれを破る。素材にとっての断りは要約と作品定義が
+  // 持つ ── 上の 2 つで測ってある。ここが測るのはこちらが組み立てた図である
+  for (const name of files.filter(item => FIGURE_NAME.test(item))) {
     const svg = readFileSync(join(out, name), "utf8")
     assert.match(svg, /検証器が弾いた作品から/, `${name} に断りが無い`)
   }

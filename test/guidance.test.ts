@@ -366,6 +366,118 @@ async function announcedByCode(): Promise<Set<string>> {
   for (const problem of (await readSb3(sb2, "測定", { anyway: true })).problems) {
     kinds.add(problem.kind)
   }
+
+  // **素材の申告は CLI の層で立つ。** 書き出しの段で決まるので `readSb3` の戻りには
+  // 現れない。ページが挙げる綴りを実物から出すには、ここまで届かせる必要がある
+  for (const kind of await announcedByCli()) kinds.add(kind)
+  return kinds
+}
+
+/**
+ * 既存の .sb3 へ、展開に失敗するエントリを 1 件足す。
+ *
+ * `project.json` の側もそのエントリを名乗るようにする。DEFLATE と名乗って中身が deflate で
+ * ない形を、目次ごと自前で組む（JSZip の書き込み側では作れない）。
+ */
+async function withBrokenEntry(bytes: Buffer, name: string): Promise<Buffer> {
+  const zip = await JSZip.loadAsync(bytes)
+  const project = JSON.parse(await zip.file("project.json")!.async("string"))
+  project.targets[0].costumes.push({
+    assetId: "2".repeat(32), name: "c", md5ext: name, dataFormat: "svg",
+    rotationCenterX: 0, rotationCenterY: 0,
+  })
+  zip.file("project.json", JSON.stringify(project))
+  zip.file(name, Buffer.from("x".repeat(500)), { binary: true })
+  const built = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" })
+  return breakPayload(built, name)
+}
+
+/**
+ * zip の中の 1 エントリだけ、圧縮された中身を壊す。
+ *
+ * **圧縮方式の申告を書き換える手は効かない** ── JSZip は方式を目次の側から読むので、
+ * ローカルヘッダだけを直しても素通りする（2026-09-04 に実測して確かめた）。中身の先頭を
+ * deflate として不正な形（BTYPE が予約値）にすると、展開する側が落ちる。
+ */
+function breakPayload(bytes: Buffer, name: string): Buffer {
+  const out = Buffer.from(bytes)
+  const target = Buffer.from(name, "utf8")
+  for (let at = 0; at + 30 <= out.length; at += 1) {
+    if (out.readUInt32LE(at) !== 0x04034b50) continue
+    const nameLength = out.readUInt16LE(at + 26)
+    const extraLength = out.readUInt16LE(at + 28)
+    if (!out.subarray(at + 30, at + 30 + nameLength).equals(target)) continue
+    const body = at + 30 + nameLength + extraLength
+    out[body] = 0x06
+    out[body + 1] = 0x00
+    out[body + 2] = 0x00
+    return out
+  }
+  throw new Error(`壊す先のエントリが見つからない: ${name}`)
+}
+
+/**
+ * 読み取りの CLI を実際に走らせて、素材の申告の綴りを集める。
+ *
+ * 標準エラーを横取りする。申告は `errors.ts` が入口を 1 つに絞って書き出すので、そこを
+ * 見れば綴りが取れる。行の左端が申告の名前である（`announceProblems` の体裁）。
+ */
+async function announcedByCli(): Promise<Set<string>> {
+  const zip = new JSZip()
+  const missing = `${"0".repeat(32)}.svg`
+  const evil = `${"1".repeat(32)}.exe`
+  zip.file(
+    "project.json",
+    JSON.stringify({
+      targets: [
+        {
+          isStage: true, name: "Stage", variables: {}, lists: {}, broadcasts: {}, blocks: {},
+          currentCostume: 0, volume: 100, layerOrder: 0, tempo: 60,
+          videoTransparency: 50, videoState: "on", textToSpeechLanguage: null,
+          costumes: [
+            // zip に無い素材と、拡張子が形式の一覧に無い素材を 1 件ずつ置く
+            { assetId: "0".repeat(32), name: "a", md5ext: missing, dataFormat: "svg",
+              rotationCenterX: 0, rotationCenterY: 0 },
+            { assetId: "1".repeat(32), name: "b", md5ext: evil, dataFormat: "svg",
+              rotationCenterX: 0, rotationCenterY: 0 },
+          ],
+          sounds: [],
+        },
+      ],
+      extensions: [],
+      meta: { semver: "3.0.0", vm: "0.2.0", agent: "" },
+    }),
+  )
+  // 展開そのものが失敗する素材も 1 件置く。**壊れた中身は JSZip の展開で落ちる**ので、
+  // 「取り出せない」の綴りはこの経路でしか出ない。DEFLATE と名乗って中身が deflate で
+  // ないエントリを、バイト列で組んで足す
+  const broken = `${"2".repeat(32)}.svg`
+  const base = await zip.generateAsync({ type: "nodebuffer" })
+  const withBroken = await withBrokenEntry(base, broken)
+
+  const dir = mkdtempSync(join(tmpdir(), "gen-scratch-cli-"))
+  const input = join(dir, "assets.sb3")
+  writeFileSync(input, withBroken)
+
+  const lines: string[] = []
+  const write = process.stderr.write.bind(process.stderr)
+  process.stderr.write = ((chunk: string | Uint8Array) => {
+    lines.push(typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8"))
+    return true
+  }) as typeof process.stderr.write
+  try {
+    const cli = await import("../src/cli.ts")
+    await cli.main(["read", input, "--out", join(dir, "out"), "--anyway"])
+  } finally {
+    process.stderr.write = write
+  }
+
+  const kinds = new Set<string>()
+  for (const line of lines.join("").split("\n")) {
+    // 申告の行は `  <名前>: <対象>` の体裁。左端の名前だけを取る
+    const found = line.match(/^ {2}([^:\s][^:]*): /)
+    if (found) kinds.add(found[1])
+  }
   return kinds
 }
 
@@ -462,8 +574,37 @@ const ANNOUNCEMENT = [
  * 63 から 64 へ動かしたのは、綴りの同じブロック定義が 2 つあることの申告
  * （`同じ綴りのブロック定義が 2 つある`）である。**これも表へ載せる** ── 手書きの
  * 誤りに対して出るうえ、黙って通すと .sb3 を開くまで気づけない（2026-09-04 の判断）。
+ *
+ * 66 から 78 へ動かしたのは素材の取り込みである。増えたのは 14 種で、減ったのは 2 種
+ * （`スクリプトの区切りが / でない`・`スクリプトが作品のディレクトリの外を指す`）。
+ * 減ったのは消えたからではなく、同じ規則を素材と分け合うために呼び名を引数へ移したため
+ * で、実行時の綴りは変わらない。
+ *
+ * | 増えた申告 | 出る場面 |
+ * |---|---|
+ * | `${kind}の項が対応でない` | 定義の素材の項が対応でない |
+ * | `${kind}にファイルが無い` | 素材の項に `ファイル` が無い |
+ * | `${kind}の形式を扱えない` | 拡張子が schema の enum に無い |
+ * | `${kind}の ${key} が整数でない` | 整数を求める欄に小数を書いた |
+ * | `${kind}の属性を導けない` | 導けない形式で属性を省いた |
+ * | `${kind}の区切りが / でない` | 綴りに `\` を書いた |
+ * | `${kind}が作品のディレクトリの外を指す` | 綴りが作品の外を指す |
+ * | `${kind}を読めない` | 素材のファイルを開けない |
+ * | `${kind}が大きすぎる` | 素材 1 件が上限を超えた |
+ * | `今のコスチュームが範囲の外` | 番号が在るコスチュームを指さない |
+ * | `素材が大きすぎる` | 展開後の総量が上限を超えた |
+ * | `素材を取り出せない` | 読み取りが素材を展開できなかった |
+ * | `素材が .sb3 に入っていない` | project.json が名乗る素材が zip に無い |
+ * | `素材の名前が形を満たさない` | 名乗る名前が md5 と拡張子の形でない |
+ *
+ * **14 種とも今は表へ載せない** ── どれも申告の説明が書くべきものをその場で名指して
+ * おり、素材の書き方そのものは知識層の作品定義のページが受け持つ（2026-09-04 の判断）。
+ *
+ * **この数は実行時の種類より少ない。** 呼び名を差し込む 9 種は、走査が 1 件として数える
+ * が実行時にはキーの数だけ現れる（`スクリプト`・`コスチューム`・`音`）。実際に出る綴りを
+ * 固定するのは、実物を動かして集める側（`announcedByCode`）である。
  */
-const ANNOUNCEMENT_KINDS = 66
+const ANNOUNCEMENT_KINDS = 78
 
 test("実装が出す申告の種類が増えていない", () => {
   const kinds = new Set<string>()

@@ -14,12 +14,17 @@
  * 名前と ID の割り当ては決定論で行う。Scratch 本体は無作為な ID を振るが、それでは
  * 同じ入力から同じ .sb3 が出ない。ID は名前から導く。
  */
-import { readFileSync } from "node:fs"
+import { readFileSync, realpathSync, statSync } from "node:fs"
 import { isAbsolute, join, resolve, sep, win32 } from "node:path"
 import { parse as parseYaml } from "yaml"
 import { agentFor, loadCatalog, type LoadedCatalog } from "./catalog.ts"
 import {
+  COSTUME_FORMATS,
+  COSTUME_KEYS,
+  DERIVABLE_FORMATS,
   LIST_FALLBACK,
+  SOUND_FORMATS,
+  SOUND_KEYS,
   SPRITE_KEYS,
   TARGET_KEYS,
   TOP_KEYS,
@@ -31,7 +36,17 @@ import {
 } from "./definition.ts"
 import { restored, unrestorable } from "./notation.ts"
 import { reasonOf } from "./errors.ts"
-import { defaultCostume } from "./costume.ts"
+import { defaultCostume, type Costume } from "./costume.ts"
+import {
+  COSTUME_REQUIRED,
+  SOUND_REQUIRED,
+  costumeOf,
+  derivable,
+  formatOf,
+  soundOf,
+  type Sound,
+} from "./asset.ts"
+import { ASSET_FILE_LIMIT } from "./intake.ts"
 import { extensionIdOf } from "../catalog/extensions.ts"
 import { lineFinder, readNotation } from "./parse.ts"
 import { asProccode, serializeScripts } from "./serialize.ts"
@@ -146,10 +161,10 @@ export async function buildProject(
     }
 
     const blocks = await scriptsOf(source, dir, name, catalog, declared, broadcasts, problems)
-    const { costume, bytes } = defaultCostume(isStage)
-    assets.set(costume.md5ext, bytes)
+    const at = isStage ? placeIn("ステージ") : placeIn("スプライト", { index: index - 1, name })
+    const shown = assetsOf(source, dir, isStage, at, assets, problems)
 
-    targets.push(target(isStage, name, source, blocks, declared, costume, index))
+    targets.push(target(isStage, name, source, blocks, declared, shown, index))
   }
 
   // 放送はステージが持つ。記法に現れた名前をすべて集めてから配る
@@ -175,6 +190,126 @@ export async function buildProject(
     project: { targets, extensions, meta: { ...META, agent: agentFor(catalog) } },
     assets: [...assets].map(([name, bytes]) => ({ name, bytes })),
     problems,
+  }
+}
+
+/**
+ * 定義に書かれた素材を読み、コスチュームと音を組む。
+ *
+ * 1 件も書かれていなければ自前の四角 1 種を持たせる。Scratch の既定素材は同梱しない
+ * （憲章の非目標。`costume.ts` が理由を持つ）。
+ *
+ * 読めない素材はその項を落として先へ進む。1 件で組み立て全体を止めると、残りの素材の
+ * 誤りが 1 回の実行で見えない。
+ *
+ * `at` は申告に出す場所、`bytes` は zip へ収める中身の集まり（呼ぶ側と共有する）。
+ */
+function assetsOf(
+  source: unknown,
+  dir: string,
+  isStage: boolean,
+  at: string,
+  bytes: Map<string, Buffer>,
+  problems: Problem[],
+): { costumes: Costume[]; sounds: Sound[]; current: number } {
+  const fields = asMapping(source)
+  const costumes: Costume[] = []
+  const sounds: Sound[] = []
+
+  for (const [kind, listed] of [
+    ["コスチューム", fields?.コスチューム],
+    ["音", fields?.音],
+  ] as const) {
+    if (!Array.isArray(listed)) continue
+    for (const [index, item] of listed.entries()) {
+      const spot = `${at}: ${kind} ${index + 1} 番目`
+      const file = asMapping(item)?.ファイル
+      // 形と綴りの誤りは `checkAssets` が申告済み。ここで二重に申告しない
+      if (typeof file !== "string" || file === "") continue
+
+      const outside = pathProblem(dir, file, kind)
+      if (outside) {
+        problems.push({ ...outside, subject: `${spot}: ファイル` })
+        continue
+      }
+
+      const body = assetBody(join(dir, file), file, spot, kind, problems)
+      if (!body) continue
+
+      const built =
+        kind === "コスチューム" ? costumeOf(file, item, body) : soundOf(file, item, body)
+      if ("missing" in built) {
+        // **導けない形式と、導ける形式が解けなかった場合で言い分を変える。** 一律に
+        // 「この形式からは導けない」と書くと、壊れた PNG で「png からは導けない。
+        // 導けるのは svg / png / wav」という自己矛盾した申告が出て、書き手を誤った
+        // 手当てへ導く（CP6 で 7 観点が指摘。`derivable()` はこの区別のために在る）
+        const format = formatOf(file)
+        problems.push({
+          kind: `${kind}の属性を導けない`,
+          subject: `${spot}: ${file}`,
+          detail: derivable(format)
+            ? `${built.missing.join(" と ")} を書く（${format} として中身を読めなかった）`
+            : `${built.missing.join(" と ")} を書く` +
+              `（${format} からは導けない。導けるのは ${DERIVABLE_FORMATS.join(" / ")}）`,
+        })
+        continue
+      }
+
+      if ("costume" in built) {
+        costumes.push(built.costume)
+        bytes.set(built.costume.md5ext, body)
+      } else {
+        sounds.push(built.sound)
+        bytes.set(built.sound.md5ext, body)
+      }
+    }
+  }
+
+  if (costumes.length === 0) {
+    // 素材を書かない作品定義の出力を動かさない。既定の四角はここでだけ入る
+    const fallback = defaultCostume(isStage)
+    costumes.push(fallback.costume)
+    bytes.set(fallback.costume.md5ext, fallback.bytes)
+  }
+
+  // 番号は 1 始まりで書かせ、生成物の添字（0 始まり）へ直す。範囲は `checkCurrent` が
+  // 見ているので、ここへ来る値は必ず在るコスチュームを指す
+  const written = fields?.今のコスチューム
+  const current = TYPES.数(written) ? written - 1 : (TARGET_KEYS.今のコスチューム.fallback as number) - 1
+  return { costumes, sounds, current }
+}
+
+/**
+ * 素材のファイルを読む。読めなければ申告して null を返す。
+ *
+ * 読む前に大きさを見る。読んでから見ては、その時点で資源を使い切っている
+ * （`intake.ts` が .sb3 の受け入れで採るのと同じ規律）。
+ */
+function assetBody(
+  path: string,
+  file: string,
+  spot: string,
+  kind: string,
+  problems: Problem[],
+): Buffer | null {
+  try {
+    const { size } = statSync(path)
+    if (size > ASSET_FILE_LIMIT) {
+      problems.push({
+        kind: `${kind}が大きすぎる`,
+        subject: `${spot}: ${file}`,
+        detail: `${size} バイトあり、上限 ${ASSET_FILE_LIMIT} バイトを超えた`,
+      })
+      return null
+    }
+    return readFileSync(path)
+  } catch (error) {
+    problems.push({
+      kind: `${kind}を読めない`,
+      subject: `${spot}: ${file}`,
+      detail: reasonOf(error),
+    })
+    return null
   }
 }
 
@@ -301,7 +436,7 @@ async function scriptsOf(
     return {}
   }
 
-  const outside = scriptPathProblem(dir, String(file))
+  const outside = pathProblem(dir, String(file), "スクリプト")
   if (outside) {
     problems.push({ ...outside, subject: `${at}: ${file}` })
     return {}
@@ -418,7 +553,7 @@ function shownName(name: string): string {
 const BACKSLASH = String.fromCharCode(92)
 
 /**
- * `スクリプト` に書かれた綴りが、作品のディレクトリの中を指しているかを見る。
+ * 定義に書かれた綴りが、作品のディレクトリの中を指しているかを見る。
  *
  * 仕様は「作品のディレクトリからの相対で書く」と述べるのに、実装が強制していなかった。
  * `../../../../README.md` を書くと作品の外を読み、中身が申告へそのまま出る（実測）。
@@ -428,14 +563,22 @@ const BACKSLASH = String.fromCharCode(92)
  *
  * 読む前に見る。読んでから確かめるのでは、外を読んだ事実が消えない。
  *
+ * `スクリプト` と素材（`コスチューム` / `音`）が同じ規則を使う。規則を 2 か所へ書くと
+ * 片方だけが古びるので、申告に出す呼び名だけを引数で受ける。
+ *
  * `dir` は作品のディレクトリ
  * `file` は定義に書かれた綴り
+ * `kind` は申告に出すキーの呼び名
  * 戻りは中を指していれば null
  */
-function scriptPathProblem(dir: string, file: string): { kind: string, detail: string } | null {
+function pathProblem(
+  dir: string,
+  file: string,
+  kind: string,
+): { kind: string, detail: string } | null {
   if (file.includes(BACKSLASH)) {
     return {
-      kind: "スクリプトの区切りが / でない",
+      kind: `${kind}の区切りが / でない`,
       detail: `区切りは / で書く（${BACKSLASH} は Windows でしか通らない）`,
     }
   }
@@ -443,7 +586,7 @@ function scriptPathProblem(dir: string, file: string): { kind: string, detail: s
   // した機械差が別の綴りで残るので、両方の規則で見る
   if (isAbsolute(file) || win32.isAbsolute(file)) {
     return {
-      kind: "スクリプトが作品のディレクトリの外を指す",
+      kind: `${kind}が作品のディレクトリの外を指す`,
       detail: "作品のディレクトリからの相対で書く",
     }
   }
@@ -454,8 +597,27 @@ function scriptPathProblem(dir: string, file: string): { kind: string, detail: s
   const full = resolve(dir, file)
   if (full !== base && !full.startsWith(base + sep)) {
     return {
-      kind: "スクリプトが作品のディレクトリの外を指す",
+      kind: `${kind}が作品のディレクトリの外を指す`,
       detail: "作品のディレクトリの外は指せない",
+    }
+  }
+
+  // **リンクを解いてからもう一度見る。** 綴りだけを見ると、作品のディレクトリに置いた
+  // リンクが外を指していても通る ── 記法なら解析されて記法にできなければ止まるが、
+  // 素材は**無解釈のバイト列として配布物（.sb3）へそのまま入る**（CP6 で 3 観点が指摘）。
+  // 解けないのは実体が無いときで、そちらは読む段が申告する
+  let real
+  try {
+    real = realpathSync(full)
+  } catch {
+    return null
+  }
+  // 置き場そのものもリンクでありうる。両側を解いて比べないと、正当な作品を外と読む
+  const realBase = realpathSync(base)
+  if (real !== realBase && !real.startsWith(realBase + sep)) {
+    return {
+      kind: `${kind}が作品のディレクトリの外を指す`,
+      detail: "リンクの先が作品のディレクトリの外にある",
     }
   }
   return null
@@ -620,6 +782,147 @@ function checkKeys(
   const fields = asMapping(source)
   if (Object.hasOwn(allowed, "変数")) checkVariables(fields?.変数, where, problems)
   if (Object.hasOwn(allowed, "リスト")) checkLists(fields?.リスト, where, problems)
+  if (Object.hasOwn(allowed, "コスチューム")) {
+    checkAssets(
+      fields?.コスチューム, "コスチューム", COSTUME_KEYS, COSTUME_FORMATS,
+      COSTUME_REQUIRED, where, problems,
+    )
+    checkCurrent(fields?.今のコスチューム, fields?.コスチューム, where, problems)
+  }
+  if (Object.hasOwn(allowed, "音")) {
+    checkAssets(
+      fields?.音, "音", SOUND_KEYS, SOUND_FORMATS, SOUND_REQUIRED, where, problems,
+    )
+  }
+}
+
+/**
+ * 素材の並びを確かめる。項ごとに、書けるキー・ファイルの綴り・形式を見る。
+ *
+ * 中身（寸法・サンプル）は読まない。ここは記法ファイルを読まずに済む検査だけを回す層で、
+ * 読み取りが復元した定義もここを通る（`definitionProblems` の約束）。ファイルを開く必要の
+ * ある検査は組み立ての側（`assetsOf`）が持つ。
+ *
+ * `kind` はキーの名前で、申告と、パスの規則を告げる文言に出す。
+ */
+function checkAssets(
+  written: unknown,
+  kind: string,
+  allowed: Record<string, import("./definition.ts").KeySpec>,
+  formats: string[],
+  required: string[],
+  where: string,
+  problems: Problem[],
+) {
+  if (written === undefined || written === null) return
+  // 並びでないことは `checkKeys` が既に申告している。ここで回すと 1 つの誤りから
+  // 項ごとの申告が並ぶ（`declarationsIn` が同じ理由で対応かどうかを見ている）
+  if (!Array.isArray(written)) return
+
+  for (const [index, item] of written.entries()) {
+    // 位置は 1 始まりで数える。0 始まりの添字で名指すと、書き手が数えている位置とずれる
+    const spot = `${where}: ${kind} ${index + 1} 番目`
+    if (!TYPES.対応(item)) {
+      problems.push({
+        kind: `${kind}の項が対応でない`,
+        subject: spot,
+        detail: `ファイル を持つ対応で書く（今は ${JSON.stringify(item)}）`,
+      })
+      continue
+    }
+
+    checkKeys(item, allowed, spot, problems)
+
+    const file = item.ファイル
+    if (file === undefined || file === null || file === "") {
+      problems.push({
+        kind: `${kind}にファイルが無い`,
+        subject: spot,
+        detail: "ファイル に素材の名前を書く",
+      })
+      continue
+    }
+    // 型の誤りは `checkKeys` が申告済み。綴りとして読めないものをここで二重に申告しない
+    if (typeof file !== "string") continue
+
+    // 綴りが作品のディレクトリの中を指すかは、ここでは見ない。判定に `dir` が要り、
+    // この層は記法ファイルを読まずに済む検査だけを回す約束になっている。`スクリプト` の
+    // 同じ規則も組み立ての側にあり、規則を 2 か所へ割らないため揃えてある（`assetsOf`）
+    const format = formatOf(file)
+    if (!formats.includes(format)) {
+      problems.push({
+        kind: `${kind}の形式を扱えない`,
+        subject: `${spot}: ファイル`,
+        detail: `拡張子は ${formats.join(" / ")} のいずれかにする（今は ${JSON.stringify(file)}）`,
+      })
+    }
+
+    // 導けない形式で属性を省いていたら、中身を読まずに止める。**導けるかどうかは
+    // 拡張子で決まる**ので、この判定にファイルは要らない。ここで見ないと、読み取りが
+    // 「組み立てを通る」と判断して書き出した定義が、組み立てで初めて落ちる
+    if (formats.includes(format) && !derivable(format)) {
+      const absent = required.filter(key => item[key] === undefined || item[key] === null)
+      if (absent.length > 0) {
+        problems.push({
+          kind: `${kind}の属性を導けない`,
+          subject: `${spot}: ファイル`,
+          detail:
+            `${absent.join(" と ")} を書く` +
+            `（${format} からは導けない。導けるのは ${DERIVABLE_FORMATS.join(" / ")}）`,
+        })
+      }
+    }
+
+    // 整数を求める欄は、型が数であることだけでは足りない。小数を書くと公式検証器まで
+    // 届いて英語の schema 文で止まり、書き手は自分の書いた鍵へ戻れない
+    for (const key of WHOLE_NUMBERS) {
+      const value = item[key]
+      if (value === undefined || value === null) continue
+      if (typeof value === "number" && Number.isInteger(value)) continue
+      // 型そのものの誤りは `checkKeys` が申告済み
+      if (typeof value !== "number") continue
+      problems.push({
+        kind: `${kind}の ${key} が整数でない`,
+        subject: `${spot}: ${key}`,
+        detail: `整数で書く（今は ${JSON.stringify(value)}）`,
+      })
+    }
+  }
+}
+
+/**
+ * 整数しか置けない欄。公式検証器の schema が `integer` を求める。
+ *
+ * 出典は `node_modules/scratch-parser/lib/sb3_definitions.json`。`rotationCenter` は
+ * `number` なので入れない ── 小数の中心は正当である（回転の中心が画素の間に来る絵がある）。
+ */
+const WHOLE_NUMBERS = ["bitmapResolution", "rate", "sampleCount"]
+
+/**
+ * `今のコスチューム` が、実際に在るコスチュームを指しているかを見る。
+ *
+ * 範囲の外を指すと、Scratch は開けるのに何も見えないターゲットになる。生成物の
+ * `currentCostume` は添字なので、範囲外でも schema としては通ってしまう。
+ */
+function checkCurrent(
+  written: unknown,
+  costumes: unknown,
+  where: string,
+  problems: Problem[],
+) {
+  if (written === undefined || written === null) return
+  // 型の誤りは `checkKeys` が申告済み
+  if (!TYPES.数(written)) return
+
+  // 素材を書かないときは自前の四角 1 種になる。番号の在る範囲は常に 1 件以上ある
+  const count = Array.isArray(costumes) && costumes.length > 0 ? costumes.length : 1
+  if (!Number.isInteger(written) || written < 1 || written > count) {
+    problems.push({
+      kind: "今のコスチュームが範囲の外",
+      subject: `${where}: 今のコスチューム`,
+      detail: `1 から ${count} までの整数で書く（今は ${JSON.stringify(written)}）`,
+    })
+  }
 }
 
 /**
@@ -807,7 +1110,7 @@ function target(
   source: unknown,
   blocks: Record<string, any>,
   declared: Map<string, Map<string, Declared>>,
-  costume: any,
+  shown: { costumes: Costume[]; sounds: Sound[]; current: number },
   layer: number,
 ) {
   const own = declared.get(isStage ? "Stage" : name) ?? new Map<string, Declared>()
@@ -826,9 +1129,11 @@ function target(
     lists,
     broadcasts: {},
     blocks,
-    currentCostume: 0,
-    costumes: [costume],
-    sounds: [],
+    // キーの並びは動かさない。JSON の並びがそのまま .sb3 のバイト列になるので、
+    // 挿し直すと素材を書かない既存の作品まで別のバイト列になる
+    currentCostume: shown.current,
+    costumes: shown.costumes,
+    sounds: shown.sounds,
     volume: 100,
   }
 

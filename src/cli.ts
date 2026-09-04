@@ -43,7 +43,7 @@ import {
   stemsFor,
   summaryOf,
 } from "./read.ts"
-import { PROJECT_JSON_LIMIT } from "./roundtrip.ts"
+import { PROJECT_JSON_LIMIT, openAssets } from "./roundtrip.ts"
 import { packSb3 } from "./sb3.ts"
 import { officialProblems } from "./validate.ts"
 import {
@@ -417,6 +417,108 @@ async function build(rest: string[]): Promise<number> {
 }
 
 /**
+ * 素材を .sb3 から取り出し、書き出しの一覧へ足す。
+ *
+ * 名前は zip の中の名前（中身の md5 + 拡張子）のままにする。理由は 3 つ ── 対応が
+ * 自明になる、名前の側から他人の文字が入らない、組み立て直しがそのまま通る。
+ *
+ * 同じ素材を複数のターゲットが使うことがある（zip は 1 件しか持たない）。名前で束ねて
+ * 1 度だけ置く。
+ *
+ * 取れなかった名前を返す。落としても読めた側は書き出す ── 図が 1 枚落ちても記法と要約を
+ * 残すのと同じ規律である。
+ *
+ * `files` は要約の対応表。素材もそのターゲットの書き出しとして数える
+ */
+async function placeAssets(
+  bytes: Buffer,
+  reading: import("./read.ts").Reading,
+  built: { name: string; body: string | Buffer; escape: string }[],
+  files: Map<string, string[]>,
+): Promise<string[]> {
+  // 名前の形を満たさず落としたものを先に言う。**黙って落とすと、組み立て直した作品から
+  // 絵が消えた理由が誰にも分からない**。落とす判断そのものは読み取りが済ませている
+  const malformed = reading.targets.flatMap(target => target.shown.dropped)
+  if (malformed.length > 0) {
+    announce`名前の形が合わず落とした素材が ${malformed.length} 件ある\n`
+    announceProblems([
+      {
+        kind: "素材の名前が形を満たさない",
+        subject: "入力",
+        detail:
+          `${malformed.length} 件を落とした: ` +
+          `${malformed.slice(0, LOST_ASSETS_SHOWN).join("・")}` +
+          `（md5 と拡張子の形でなければ、書き出し先の外を指しうる）`,
+      },
+    ])
+  }
+
+  const wanted = new Set<string>()
+  for (const target of reading.targets) {
+    for (const asset of [...target.shown.costumes, ...target.shown.sounds]) {
+      wanted.add(asset.file)
+      // 対応表は書いた側が数える。取れなかった素材は下で外す
+      files.get(target.stem)?.push(asset.file)
+    }
+  }
+  if (wanted.size === 0) return []
+
+  let taken
+  try {
+    taken = await openAssets(bytes, wanted)
+  } catch (error) {
+    // 上限を超えたときと、中身が壊れていて展開できないときにここへ来る。読めた側は
+    // 捨てないが、**1 件も置かない以上は全件を落としたものとして扱う** ── ここで
+    // 定義を刈らずに戻っていたとき、素材 1 件の破損で全素材が消えたのに `project.yaml`
+    // が 3 件を参照したまま終了コード 0 で出ていた（CP6 の再評価層が実測）
+    announceProblems([
+      { kind: "素材を取り出せない", subject: "入力", detail: reasonOf(error) },
+    ])
+    return prune(reading, files, wanted)
+  }
+
+  for (const [name, body] of taken.assets) {
+    built.push({ name, body, escape: ESCAPES.素材 })
+  }
+  if (taken.missing.length === 0) return []
+  return prune(reading, files, new Set(taken.missing))
+}
+
+/**
+ * 置けなかった素材を、対応表からも作品定義からも外す。落とした名前を返す。
+ *
+ * **定義だけ残すと、実在しないファイルを指す定義を書き出すことになる**。公式検証器は
+ * 素材の欠落を通すので（FEAT0003 が申告している）、素材の無い .sb3 は実在する。
+ * 外した結果コスチュームが 0 件になったターゲットは、組み立てが自前の四角を与える。
+ *
+ * **失敗の経路は 2 つあり、両方がここを通る。** 片方だけを刈っていたときに壊れたのが
+ * 上の実測である。
+ */
+function prune(
+  reading: import("./read.ts").Reading,
+  files: Map<string, string[]>,
+  lost: Set<string>,
+): string[] {
+  for (const written of files.values()) {
+    for (const name of [...written]) if (lost.has(name)) written.splice(written.indexOf(name), 1)
+  }
+  for (const target of reading.targets) {
+    const kept = target.shown.costumes.filter(asset => !lost.has(asset.file))
+    // 番号は残った並びを指す。指していたものを外したら先頭へ倒す ── 指し先が消えている
+    // 以上、元の番号を保っても意味を持たない
+    const at = target.shown.current - 1
+    if (at < 0 || at >= target.shown.costumes.length || lost.has(target.shown.costumes[at].file)) {
+      target.shown.current = 1
+    } else {
+      target.shown.current = kept.indexOf(target.shown.costumes[at]) + 1
+    }
+    target.shown.costumes = kept
+    target.shown.sounds = target.shown.sounds.filter(asset => !lost.has(asset.file))
+  }
+  return [...lost]
+}
+
+/**
  * 書き出し先が使える状態かを見る。
  *
  * 空でない置き場へ黙って重ねると、前回の `.sbk` と図が残り、要約の対応表に無い
@@ -538,6 +640,17 @@ export const ESCAPES = Object.freeze({
   図: "図",
   /** 像（PNG）。文字を持たないので逃がすものが無い */
   像: "像",
+  /**
+   * 素材（他人の .sb3 から写した絵と音）。中身は一切解釈せずそのまま置く。
+   *
+   * 中身に逃がすものが無いのは、**この道具がこのバイト列を解釈しないから**である。
+   * 図や記法と違い、読む先はここには無い。
+   *
+   * **名前の側は違う。** 他人の project.json が名乗る綴りがそのままファイル名になるので、
+   * 形を見る守りが要る（`MD5EXT`）。守りは名前がこちらへ入る場所（`writtenAssets`）に
+   * 置いてあり、ここへ届く時点で md5 と拡張子の形に限られている
+   */
+  素材: "素材",
 })
 
 /** 名乗ってよい逃がし方。`placeAll` はこの集合の外を置かない */
@@ -798,6 +911,22 @@ async function read(rest: string[]): Promise<number> {
     announceProblems(undrawn)
   }
 
+  // 素材は記法と図を組み終えてから足す。先に取ると、素材が取れなかったときに
+  // 読めた側まで組み上がらない
+  const lostAssets = await placeAssets(bytes, reading, built, files)
+  if (lostAssets.length > 0) {
+    announce`.sb3 の中に無い素材が ${lostAssets.length} 件ある\n`
+    announceProblems([
+      {
+        kind: "素材が .sb3 に入っていない",
+        subject: input,
+        detail:
+          `${lostAssets.length} 件を落とした: ` +
+          lostAssets.slice(0, LOST_ASSETS_SHOWN).join("・"),
+      },
+    ])
+  }
+
   // 復元した定義は、組み立てが使うのと同じ規則で確かめてから書く。通らない定義を
   // 書き出すと、読み手はそれを直せる入力だと思って `build` へ渡し、そこで初めて
   // 止まる。読めた側（記法・図・要約）は書き、定義だけを落として理由を申告する
@@ -842,7 +971,15 @@ async function read(rest: string[]): Promise<number> {
     return 1
   }
 
-  const produced = built.reduce((sum, item) => sum + Buffer.byteLength(item.body), 0)
+  // **素材は数えない。** この線が縛るのは「値を印へ変える設計で出力が膨張する」性質で、
+  // 入力から 1 対 1 で写る素材はその性質を持たない。素材は入口が縛る
+  // （`ASSET_TOTAL_LIMIT`）。除く側を明示しないと、素材を一覧へ入れた時点で黙って合算され、
+  // Scratch が受け取る大きさの作品が「書き出す量が多すぎる」で落ちる（CP6 で 6 観点が
+  // 独立に指摘し、6 MB の素材を持つ作品が読めないことを実測した）
+  const produced = built.reduce(
+    (sum, item) => (item.escape === ESCAPES.素材 ? sum : sum + Buffer.byteLength(item.body)),
+    0,
+  )
   if (produced > OUTPUT_LIMIT) {
     announce`書き出す量が多すぎる。書き出さない\n`
     announceProblems([
@@ -863,7 +1000,11 @@ async function read(rest: string[]): Promise<number> {
     return 1
   }
 
-  const figures = built.filter(item => item.name.endsWith(`.${format}`)).length
+  // 素材は数えない。拡張子だけで数えると、`--format svg` のとき svg の素材が図として
+  // 数えられる（素材と図は同じ拡張子で同じ置き場に並ぶ）
+  const figures = built.filter(
+    item => item.escape !== ESCAPES.素材 && item.name.endsWith(`.${format}`),
+  ).length
   // 落としたターゲットがあるのに「作品定義あり」とだけ言わない。定義は書けているが
   // 元の作品の全部ではなく、その差は報告からしか分からない（CP6 で指摘）
   // 落とした件数は定義の可否と別に出す。定義が書けた枝にだけ添えていたので、定義が
@@ -871,15 +1012,32 @@ async function read(rest: string[]): Promise<number> {
   const restored = unfit.length === 0 ? "作品定義あり" : "作品定義なし"
   const lost =
     reading.dropped.length > 0 ? ` / ターゲット ${reading.dropped.length} 件を落とした` : ""
-  const counts = `ターゲット ${reading.targets.length} 件 / 図 ${figures} 件`
-  report`${dir}\n  ${counts} / ${restored}${lost}\n`
-  // 図を落としたことも 0 で終わらせない。書けなかったものがあるのに成功で返すと、
-  // 呼び出し側は全部揃ったものとして次へ渡す
-  return reading.problems.length > 0 || unfit.length > 0 || undrawn.length > 0 ? 1 : 0
+  // 素材の件数も出す。出さないと、素材を持つ作品と持たない作品が同じ報告になる
+  const assets = built.filter(item => item.escape === ESCAPES.素材).length
+  const dropped = lostAssets.length > 0 ? ` / 素材 ${lostAssets.length} 件を落とした` : ""
+  const counts = `ターゲット ${reading.targets.length} 件 / 図 ${figures} 件 / 素材 ${assets} 件`
+  report`${dir}\n  ${counts} / ${restored}${lost}${dropped}\n`
+  // 図を落としたことも素材を落としたことも 0 で終わらせない。書けなかったものがあるのに
+  // 成功で返すと、呼び出し側は全部揃ったものとして次へ渡す。**素材だけ 0 を返していた
+  // ため、素材 1 件の破損で全素材が消えても成功で終わっていた**（CP6 の再評価層が実測）
+  return reading.problems.length > 0 ||
+    unfit.length > 0 ||
+    undrawn.length > 0 ||
+    lostAssets.length > 0
+    ? 1
+    : 0
 }
 
 /** 作品定義の断りへ並べる欄の数。全部は要約が数えるので、ここは頭だけ出す */
 const NOTICE_KEY_LIMIT = 4
+
+/**
+ * 取れなかった素材を、申告に何件まで並べるか。
+ *
+ * 名前は中身の md5 なので 1 件 36 文字ある。全部並べると 1 行が読めなくなる。
+ * 件数そのものは上に出しているので、ここは手掛かりの列である
+ */
+const LOST_ASSETS_SHOWN = 4
 
 /**
  * 逃げ道を通したことを、図の側にも残す。

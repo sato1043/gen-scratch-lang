@@ -12,7 +12,11 @@
 import { createRequire } from "node:module"
 import { CATALOG_KEYS, loadCatalog } from "./catalog.ts"
 import {
+  COSTUME_FORMATS,
+  MD5EXT,
+  SOUND_FORMATS,
   SPRITE_KEYS,
+  TARGET_KEYS,
   TYPES,
   asKeyed,
 } from "./definition.ts"
@@ -174,6 +178,37 @@ type ReadTarget = {
   warped: string[]
   /** 位置・大きさ・向き・表示。ステージは持たない */
   placement: Record<string, unknown>
+  /** コスチュームと音。project.json が持つ属性をそのまま写す */
+  shown: ShownAssets
+}
+
+/** ターゲット 1 つ分の素材。作品定義へ書き出す形で持つ */
+export type ShownAssets = {
+  costumes: WrittenAsset[]
+  sounds: WrittenAsset[]
+  /** はじめに見えているコスチュームの番号。1 始まり */
+  current: number
+  /**
+   * 名前が形を満たさず落とした素材の綴り。**黙って落とさないために数える**。
+   *
+   * 逃げ道（`--anyway`）を通ると、検証器が弾いた綴りもここへ届く。落とすのは正しいが、
+   * 落としたことを言わないと、組み立て直した作品から絵が消えた理由が誰にも分からない。
+   */
+  dropped: string[]
+}
+
+/**
+ * 作品定義へ書く素材 1 件。
+ *
+ * 属性は出典の project.json が持っていたものだけを写す。持っていない属性を導いて
+ * 埋めると、往復で元と違う .sb3 になる。
+ */
+export type WrittenAsset = {
+  /** 書き出すファイル名。zip の中の名前（中身の md5 + 拡張子）と一致する */
+  file: string
+  name: string
+  /** 出典が持っていた属性。キーは .sb3 の綴りのまま */
+  attributes: Record<string, number>
 }
 
 /** 記法へ戻せず落としたターゲット */
@@ -446,6 +481,7 @@ async function readWith(
       broadcasts: Object.keys(broadcasts.values),
       warped: warpedIn(target),
       placement: placementOf(target),
+      shown: shownOf(target),
     })
   }
 
@@ -750,15 +786,25 @@ export const PLACEMENT_KEYS = {
 /**
  * 置かれ方のほかに、別の形で復元しているターゲットの欄。
  *
- * 記法（`blocks`）・宣言（`variables` / `lists`）・呼び名（`name`）と、種別の印
- * （`isStage`）である。ここに挙げない欄は復元しない側へ数える。
+ * 記法（`blocks`）・宣言（`variables` / `lists`）・呼び名（`name`）・種別の印
+ * （`isStage`）と、素材（`costumes` / `sounds` / `currentCostume`）である。ここに
+ * 挙げない欄は復元しない側へ数える。
  *
  * **`broadcasts` は挙げない。** 定義の形式にメッセージのキーが無く、`definitionOf` も
  * 書かない。記法の中で使われたものは組み立てが作り直すが、宣言だけのものは消える。
  * ここへ挙げていた間は、要約が「メッセージ 2 件」と数えるのに定義には無く、「復元しない
  * 属性」にも出ないという状態だった（CP6 で 3 観点が独立に実測）。
  */
-const RESTORED_ELSEWHERE = new Set(["name", "isStage", "blocks", "variables", "lists"])
+const RESTORED_ELSEWHERE = new Set([
+  "name",
+  "isStage",
+  "blocks",
+  "variables",
+  "lists",
+  "costumes",
+  "sounds",
+  "currentCostume",
+])
 
 /**
  * .sb3 の欄の名前の言い換え。
@@ -1756,8 +1802,12 @@ function cell(text: string): string {
 /**
  * 読み取った内容から、TASK0001 の入力形式（作品定義）を組み立てる。
  *
- * 復元するのは project.json が持つものだけである。コスチュームと音は復元しない
- * （非目標）。作品の呼び名も project.json は持たないので、入力のファイル名を置く。
+ * 復元するのは project.json が持つものだけである。作品の呼び名は project.json が
+ * 持たないので、入力のファイル名を置く。
+ *
+ * コスチュームと音は名前で指す。バイト列を書き出すのは呼ぶ側（`read` の出口）で、
+ * ここは定義に載る綴りだけを組む。**取り出せなかった素材は呼ぶ側が `shown` から外す**
+ * ので、ここが実在しないファイルを指す定義を書くことはない。
  *
  * 既定と同じ値は書かない。書いても意味は変わらないが、読み手が「なぜこの値なのか」を
  * 問うことになる。定義の側の既定は `SPRITE_KEYS` が持っており、そこから引く ── ここへ
@@ -1774,6 +1824,7 @@ export function definitionOf(reading: Reading, name: string): Record<string, unk
     ...(Object.keys(target.variables).length > 0 ? { 変数: target.variables } : {}),
     ...(Object.keys(target.lists).length > 0 ? { リスト: target.lists } : {}),
     ...(target.warped.length > 0 ? { 再描画しないブロック: target.warped } : {}),
+    ...assetKeys(target.shown),
   })
 
   return {
@@ -1785,6 +1836,28 @@ export function definitionOf(reading: Reading, name: string): Record<string, unk
       ...placed(target.placement),
     })),
   }
+}
+
+/**
+ * 素材を作品定義のキーへ落とす。持たないものは書かない。
+ *
+ * `今のコスチューム` は既定（1）と同じなら書かない。既定と同じ値を書くと、読み手が
+ * 「なぜこの値なのか」を問うことになる（置かれ方と同じ規律）。
+ */
+function assetKeys(shown: ShownAssets): Record<string, unknown> {
+  const written: Record<string, unknown> = {}
+  if (shown.costumes.length > 0) written.コスチューム = shown.costumes.map(assetItem)
+  if (shown.sounds.length > 0) written.音 = shown.sounds.map(assetItem)
+  // 既定は定義の表が持つ。ここへ数を書き写すと、既定が動いたとき復元だけが古びる
+  if (shown.current !== TARGET_KEYS.今のコスチューム.fallback) {
+    written.今のコスチューム = shown.current
+  }
+  return written
+}
+
+/** 素材 1 件を定義の項にする。出典が持っていた属性だけを添える */
+function assetItem(asset: WrittenAsset): Record<string, unknown> {
+  return { 名前: asset.name, ファイル: asset.file, ...asset.attributes }
 }
 
 /**
@@ -1815,6 +1888,133 @@ function warpedIn(target: unknown): string[] {
     names.add(proccode.replace(/%[sbn]/g, () => `(引数${(index += 1)})`))
   }
   return [...names]
+}
+
+/**
+ * ターゲットが持つコスチュームと音を、作品定義へ書ける形にする。
+ *
+ * **属性は出典が持っていたものだけを写す。** 無い属性を導いて埋めると、往復で元と違う
+ * .sb3 になる。schema が任意としている属性（`bitmapResolution`・`rotationCenter`・
+ * `rate`・`sampleCount`）を出典が省いていれば、こちらも省く ── その定義は組み立てを
+ * 通らないので、書き出す前の検査（`definitionProblems`）が捕まえて理由を申告する。
+ *
+ * 名前（`md5ext`）は他人の .sb3 が決める。ファイル名として置ける形かは書き出す側が
+ * 見るので、ここでは写すだけにする。
+ */
+function shownOf(target: unknown): ShownAssets {
+  const fields = asKeyed(target)
+  const dropped: string[] = []
+  const listed = Array.isArray(fields?.costumes) ? fields.costumes : []
+  const costumes = writtenAssets(listed, COSTUME_ATTRIBUTES, COSTUME_FORMATS, dropped)
+  return {
+    costumes,
+    sounds: writtenAssets(fields?.sounds, SOUND_ATTRIBUTES, SOUND_FORMATS, dropped),
+    current: currentOf(fields?.currentCostume, listed, costumes),
+    dropped,
+  }
+}
+
+/**
+ * はじめに見えているコスチュームの番号を、落とした後の並びで数え直す。
+ *
+ * 生成物は 0 始まりの添字、定義は 1 始まりの番号である。**落とした件数を見ずに 1 を足すと、
+ * 並びだけが縮んで番号が取り残される** ── 範囲の外へ出れば定義が丸ごと書かれなくなり、
+ * 範囲に収まれば別のコスチュームが黙って選ばれる（CP6 で 5 観点が指摘）。
+ *
+ * 指していたコスチューム自体を落としたときは先頭へ倒す。指し先が消えた以上、元の番号を
+ * 保っても意味を持たない。
+ *
+ * `at` は出典の `currentCostume`、`listed` は出典の並び、`kept` は残した並び。
+ */
+function currentOf(at: unknown, listed: unknown[], kept: WrittenAsset[]): number {
+  if (typeof at !== "number" || !Number.isInteger(at) || at < 0 || at >= listed.length) return 1
+  const wanted = assetNameOf(asKeyed(listed[at]), COSTUME_FORMATS)
+  if (wanted === null) return 1
+  const found = kept.findIndex(asset => asset.file === wanted)
+  return found < 0 ? 1 : found + 1
+}
+
+/**
+ * 素材の書き出し名を決める。書けない素材は null。
+ *
+ * **`md5ext` は schema の必須欄ではない**（`required` は `assetId` / `dataFormat` / `name`）。
+ * 持たない .sb3 は正当なので落とさず、必須の 2 欄から組む（scratch-vm も同じ形で解決する）。
+ *
+ * **形式は認める側の一覧で照合する。** `md5ext` の綴りは他人が決め、そのまま書き出しの
+ * ファイル名になる。schema の pattern は拡張子を `[a-zA-Z0-9]+` としか縛らないので、
+ * `<32hex>.exe` が公式検証器を素通りする（旗も要らない）。生成の側は許可リストを持って
+ * いるのに読み取りの側が持たない非対称だった（CP6 で 6 観点が指摘し、`.exe` が書き出し先へ
+ * 実際に置かれることを実測した）。
+ *
+ * 長さも縛る。拡張子に上限が無いと、ファイル名として書けない長さの素材 1 件で読み取り全体が
+ * 何も書かずに終わる（`placeAll` は不可分に置く）。
+ */
+function assetNameOf(fields: Record<string, unknown> | null, formats: string[]): string | null {
+  const format = String(fields?.dataFormat ?? "").toLowerCase()
+  if (!formats.includes(format)) return null
+
+  const written = fields?.md5ext
+  if (typeof written === "string" && written !== "") {
+    if (!MD5EXT.test(written)) return null
+    // 名乗った綴りと `dataFormat` が食い違う入力を通さない。schema は両者を結び付けない
+    if (written.slice(written.lastIndexOf(".") + 1).toLowerCase() !== format) return null
+    return written
+  }
+
+  // 名乗らないなら必須の 2 欄から組む
+  const id = String(fields?.assetId ?? "")
+  const built = `${id}.${format}`
+  return MD5EXT.test(built) ? built : null
+}
+
+/** 作品定義へ写すコスチュームの属性。キーは .sb3 の綴りのまま */
+const COSTUME_ATTRIBUTES = ["bitmapResolution", "rotationCenterX", "rotationCenterY"]
+
+/** 作品定義へ写す音の属性 */
+const SOUND_ATTRIBUTES = ["rate", "sampleCount"]
+
+/**
+ * 素材の並びを、作品定義へ書ける形にする。
+ *
+ * `md5ext` を持たない項は落とす。zip の中の名前が分からないので、書き出しても参照先の
+ * 無い定義になる。落としたことは「復元しない属性」の側には出ない ── あちらは欄の名前を
+ * 数えるので、欄はあるが中身が欠けている状態を表せない。
+ *
+ * **形の合わない `md5ext` も落とす。** この綴りはそのまま書き出すファイル名になり、
+ * 値は project.json が名乗る ── 逃げ道（`--anyway`）を通れば検証器の判定を経ずに
+ * ここへ届く。`../` を含む名前を通せば、書き出し先の外へ書くことになる（`MD5EXT` に
+ * 実測と経緯を書いた）。
+ */
+function writtenAssets(
+  listed: unknown,
+  attributes: string[],
+  formats: string[],
+  dropped: string[],
+): WrittenAsset[] {
+  if (!Array.isArray(listed)) return []
+  const written: WrittenAsset[] = []
+  for (const item of listed) {
+    const fields = asKeyed(item)
+    const file = assetNameOf(fields, formats)
+    if (file === null) {
+      // 綴りは他人の .sb3 から来る。申告へ載る前に中和して切り詰める
+      dropped.push(neutralize(clip(String(fields?.md5ext ?? fields?.assetId ?? ""), DROPPED_NAME_LENGTH)))
+      continue
+    }
+    const kept: Record<string, number> = {}
+    for (const key of attributes) {
+      const value = fields?.[key]
+      // 出典が持っていないものは書かない。導いて埋めると往復で値が変わる
+      if (typeof value === "number" && Number.isFinite(value)) kept[key] = value
+    }
+    written.push({
+      file,
+      // 名前も他人の .sb3 から来る。記法へ載る綴りと同じ守りを通す
+      name: spelled(String(fields?.name ?? "")),
+      attributes: kept,
+    })
+  }
+  return written
 }
 
 /**

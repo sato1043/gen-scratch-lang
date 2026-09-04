@@ -13,7 +13,12 @@ import { createRequire } from "node:module"
 import JSZip from "jszip"
 import { eachBlock } from "./parse.ts"
 import { clip } from "./errors.ts"
-import { PROJECT_JSON_LIMIT, acceptArchive, refuseBadLimit } from "./intake.ts"
+import {
+  ASSET_TOTAL_LIMIT,
+  PROJECT_JSON_LIMIT,
+  acceptArchive,
+  refuseBadLimit,
+} from "./intake.ts"
 import { TYPES, asKeyed } from "./definition.ts"
 import { SENTINEL_CLOSE, SENTINEL_OPEN } from "./notation.ts"
 
@@ -59,6 +64,122 @@ export { PROJECT_JSON_LIMIT }
  * 組める入れ子は現実には 10 段ほどで、この線には 15 倍の余裕がある。
  */
 export const NESTING_LIMIT = 156
+
+/**
+ * .sb3 から素材のバイト列を取り出す。
+ *
+ * **`openSb3` の戻りは広げない。** あちらの戻りを `project` として直に使う呼び出しが
+ * 検査に 10 か所あり、形を変えると全部が書き換わる。素材は別の口として足し、既存の
+ * 契約に触れないようにする。zip を 2 度開く費用は払うが、この経路は既に公式検証器の
+ * ぶんも開いている。
+ *
+ * 名前は project.json が名乗る `md5ext` である。**攻撃者が書ける**ので、正規表現を
+ * 組み立てずに突き合わせる ── zip の側の名前を 1 度だけ並べ、完全一致と 1 段の
+ * ディレクトリ付きの 2 通りで引く（project.json を探す規則と同じ形）。当たりが 1 件で
+ * なければ引かない。
+ *
+ * 展開しながら総量を数え、上限を超えたところで止める。**受け入れ検査の目は名乗りを
+ * 見るだけなので、ここが最後の砦になる**（`readWithin` と同じ役割分担）。
+ *
+ * `wanted` は取り出したい名前、`total` は展開後の総量の上限。戻りは取れたものの表と、
+ * zip に無かった名前。
+ */
+export async function openAssets(
+  bytes: Buffer,
+  wanted: Iterable<string>,
+  { total = ASSET_TOTAL_LIMIT }: { total?: number } = {},
+): Promise<{ assets: Map<string, Buffer>; missing: string[] }> {
+  refuseBadLimit(total)
+
+  // 開く前に見る。ここを通さないと、外部のバイト列を受ける口が 3 つになり、そのうち
+  // 1 つだけ量の目を持たない状態になる（順序に依る統制になる。CP6 で 3 観点が指摘）
+  const refused = acceptArchive(bytes, "入力", { assets: total })
+  if (refused.length > 0) {
+    const [{ kind, detail }] = refused
+    throw new Error(detail ? `${kind}: ${detail}` : kind)
+  }
+
+  const zip = await JSZip.loadAsync(bytes)
+  /** zip の名前を引ける形にする。1 段のディレクトリは剥がした側でも引けるようにする */
+  const byName = new Map<string, import("jszip").JSZipObject | null>()
+  /** 完全一致で在る名前。剥がし名がこれを潰さないようにする */
+  const exact = new Set(Object.keys(zip.files))
+  for (const [name, entry] of Object.entries(zip.files)) {
+    if (entry.dir) continue
+    // 完全一致を先に置き、後から来る剥がし名で潰させない（下で守る）
+    byName.set(name, entry)
+    const slash = name.indexOf("/")
+    // 2 段以上は検証器も見ない。1 段だけを剥がす
+    if (slash < 0 || name.indexOf("/", slash + 1) >= 0) continue
+    const bare = name.slice(slash + 1)
+    // **完全一致が既に在るならそちらを残す。** 剥がし名で上書きすると、引き当てが zip の
+    // 並び順で変わる（CP6 で 3 観点が指摘）。剥がし名どうしが重なるときは、どちらを渡しても
+    // 取り違えになるので null を置いて引かせない
+    if (bare === name || exact.has(bare)) continue
+    byName.set(bare, byName.has(bare) ? null : entry)
+  }
+
+  const assets = new Map<string, Buffer>()
+  const missing: string[] = []
+  let held = 0
+  for (const name of wanted) {
+    if (assets.has(name)) continue
+    const entry = byName.get(name) ?? null
+    if (!entry) {
+      missing.push(name)
+      continue
+    }
+    // **流しながら数え、超えたところで打ち切る。** 1 件を展開し切ってから測る形では、
+    // 超過分を確保し終えており、しかも超過幅を攻撃者が決める（CP6 で 7 観点が指摘）。
+    // 早期の目（`acceptArchive`）は zip の目次の名乗りを見るだけで、名乗りは攻撃者が
+    // 書けるので、ここが最後の砦になる
+    const body = await bytesWithin(entry, total - held)
+    held += body.length
+    assets.set(name, body)
+  }
+  return { assets, missing }
+}
+
+/**
+ * 素材 1 件を、残りの予算を超えないところまで流しながら読む。
+ *
+ * `readWithin` と同じ形にしてある（あちらは project.json をテキストとして読む）。違うのは
+ * 返すのがバイト列であることと、上限が「残りの予算」であること ── 総量を縛るので、1 件目が
+ * 使った分だけ 2 件目の予算が減る。
+ *
+ * `remaining` が 0 以下なら 1 バイトも読まずに投げる。読んでから測ると、その 1 件ぶんの
+ * 費用を必ず払うことになる。
+ */
+function bytesWithin(entry: import("jszip").JSZipObject, remaining: number): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    if (remaining <= 0) {
+      reject(new Error(`素材が大きすぎる: 展開後の総量が上限を超えた`))
+      return
+    }
+    const parts: Buffer[] = []
+    let size = 0
+    let stopped = false
+    // 型は 2.x のもので `destroy` を宣言しないが実体は持つ（`readWithin` と同じ事情）
+    const stream: any = entry.nodeStream("nodebuffer")
+
+    stream.on("data", (chunk: Buffer) => {
+      if (stopped) return
+      size += chunk.length
+      if (size > remaining) {
+        stopped = true
+        if (typeof stream.destroy === "function") stream.destroy()
+        else stream.pause()
+        reject(new Error(`素材が大きすぎる: 展開後の総量が上限を超えた`))
+        return
+      }
+      parts.push(chunk)
+    })
+    stream.on("error", reject)
+    stream.on("end", () => {
+      if (!stopped) resolve(Buffer.concat(parts))
+    })
+  })
+}
 
 /**
  * 記法の字下げ 1 段ぶん。TASK0001 が書く記法と揃える。

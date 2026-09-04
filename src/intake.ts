@@ -23,9 +23,10 @@
  * あり続ける。両方が要る ── こちらは検証器へ渡す経路のように、こちらが展開を握れない
  * 相手にも掛かる。
  *
- * **素材の展開後の総量は見ない。** 測った結果、今どの経路もその量を払わないため
- * （公式検証器も `openSb3` も project.json しか展開しない）。発火しない線を引くと、
- * 守っているつもりだけが残る。素材を読む経路を足すときに引き直す（2026-08-20 に裁定）。
+ * **素材の展開後の総量も見る。** かつては見なかった ── どの経路もその量を払わなかった
+ * ためで、「素材を読む経路を足すときに引き直す」と条件を付けてあった（2026-08-20 の裁定）。
+ * TASK0025 が読み取りへ素材を展開する経路を足したので、条件どおり引き直した
+ * （`ASSET_TOTAL_LIMIT`）。
  */
 
 export type Problem = {
@@ -46,6 +47,45 @@ export type Problem = {
  * 他者の作品を弾く線になる。
  */
 export const PROJECT_JSON_LIMIT = 5 * 1024 * 1024
+
+/**
+ * 素材 1 件の大きさの上限。
+ *
+ * 出典は project.json と同じ（Scratch Wiki "Project File Size"）。Scratch 自身が素材
+ * 1 件を 10 MB までとしているので、これを超える素材を収めた .sb3 はそもそも Scratch で
+ * 扱えない。自分たちの生成物の大きさを基準に倍率で置くと、Scratch が受け取る素材を
+ * 弾く線になる。
+ *
+ * 縛るのは生成の側（利用者が定義に書いた素材を読むとき）である。読み取りの側は
+ * 他人の .sb3 から来るので、`ASSET_TOTAL_LIMIT` が展開後の総量で縛る。
+ */
+export const ASSET_FILE_LIMIT = 10 * 1024 * 1024
+
+/**
+ * 素材の展開後の総量の上限。
+ *
+ * **落ちる点が無いので「実測の 1/10」では導けない。** 既存の 2 つ（エントリ数・入れ子の深さ）は
+ * 落ちる点を測ってその 1/10 に置いたが、素材の展開は落ちない ── 250 KB の zip から
+ * 4 GB を展開しても通り、費用は量に比例するだけだった（2026-09-04 実測・Node 24.12.0）。
+ *
+ * | 展開後 | 生の大きさ | 展開の時間 |
+ * |---|---|---|
+ * | 100 MB | 101 KB | 316 ms |
+ * | 500 MB | 499 KB | 1,696 ms |
+ * | 1,000 MB | 997 KB | 2,910 ms |
+ * | 4,000 MB | 3,987 KB | 11,658 ms |
+ *
+ * 同じ 50 MB を 4 回測った散らばりは 1.31 倍（167〜218 ms）で、上の差は量の違いに読める。
+ *
+ * 導くのは**費用の予算**からにする。約 2.9 ms/MB なので、256 MB で約 750 ms である。
+ * これはエントリ数の上限が払う費用（約 210 ms）と同じ桁で、対話的な道具として待てる。
+ *
+ * 正当な作品を弾かないことも見る。Scratch 自身が素材 1 件を 10 MB までとしているので、
+ * この線は最大の素材 25 件ぶんに当たる。自分たちの生成物は数 KB である。
+ *
+ * **これは落ちるのを防ぐ線ではなく、他人の .sb3 が命じられる仕事の量を縛る線である。**
+ */
+export const ASSET_TOTAL_LIMIT = 256 * 1024 * 1024
 
 /**
  * zip のエントリ数の上限。
@@ -124,10 +164,12 @@ export function acceptArchive(
   {
     entries: entryLimit = ARCHIVE_ENTRY_LIMIT,
     projectJson: jsonLimit = PROJECT_JSON_LIMIT,
-  }: { entries?: number; projectJson?: number } = {},
+    assets: assetLimit = ASSET_TOTAL_LIMIT,
+  }: { entries?: number; projectJson?: number; assets?: number } = {},
 ): Problem[] {
   refuseBadLimit(entryLimit)
   refuseBadLimit(jsonLimit)
+  refuseBadLimit(assetLimit)
 
   // zip かどうかは先頭の目印でなく、セントラルディレクトリの終端が在るかで決める。目印で
   // 決めると、頭に 1 バイト足すだけでこの検査を飛び越せる ── zip の読み手は終端を
@@ -159,6 +201,20 @@ export function acceptArchive(
         kind: "zip のエントリが多すぎる",
         subject,
         detail: `上限 ${entryLimit} 件を超えた`,
+      },
+    ]
+  }
+
+  // 素材の総量も見る。project.json だけを見ていたころは、素材だけが膨らむ .sb3 が
+  // 素通りした（生 197 KB → 展開後 200 MB。2026-08-20 実測）。名乗りは攻撃者が書けるので
+  // これは安く弾く早期の目であり、実際に展開しながら打ち切る側（`openAssets`）が砦になる
+  if (listed.assets > assetLimit) {
+    const shown = listed.zip64 ? `${listed.assets} バイト以上` : `${listed.assets} バイト`
+    return [
+      {
+        kind: "素材が大きすぎる",
+        subject,
+        detail: `展開後に${shown}あり、上限 ${assetLimit} バイトを超えた`,
       },
     ]
   }
@@ -224,7 +280,7 @@ function listedSizes(
   bytes: Buffer,
   end: number,
   limit: number,
-): { sizes: number[]; zip64: boolean; tooMany: boolean } | { error: string } {
+): { sizes: number[]; assets: number; zip64: boolean; tooMany: boolean } | { error: string } {
   const span = bytes.readUInt32LE(end + 12)
   const start = bytes.readUInt32LE(end + 16)
   if (start === ZIP64_SIZE || span === ZIP64_SIZE) {
@@ -235,13 +291,15 @@ function listedSizes(
   }
 
   const sizes = []
+  /** project.json 以外が名乗る展開後の大きさの合計。素材の総量に当たる */
+  let assets = 0
   let zip64 = false
   let at = start
   let seen = 0
   // 目印が続く限り読む。終端は別の目印なので、そこで自然に止まる
   while (at + CD_MIN <= end && bytes.readUInt32LE(at) === CD_SIGNATURE) {
     seen += 1
-    if (seen > limit) return { sizes, zip64, tooMany: true }
+    if (seen > limit) return { sizes, assets, zip64, tooMany: true }
 
     const size = bytes.readUInt32LE(at + 24)
     const nameLength = bytes.readUInt16LE(at + 28)
@@ -255,8 +313,12 @@ function listedSizes(
     const name = bytes.toString("utf8", nameAt, nameAt + nameLength)
     if (PROJECT_JSON.test(name)) {
       sizes.push(size)
-      if (size === ZIP64_SIZE) zip64 = true
+    } else {
+      // ディレクトリの見出し（末尾が `/`）は中身を持たないが、名乗る大きさは 0 なので
+      // 足しても変わらない。分けずに済ませる
+      assets += size
     }
+    if (size === ZIP64_SIZE) zip64 = true
     at = nameAt + nameLength + extraLength + commentLength
   }
 
@@ -265,5 +327,5 @@ function listedSizes(
   if (seen === 0) {
     return { error: "zip の目次（セントラルディレクトリ）に、読める見出しが 1 件も無い" }
   }
-  return { sizes, zip64, tooMany: false }
+  return { sizes, assets, zip64, tooMany: false }
 }

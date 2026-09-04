@@ -138,7 +138,7 @@ test("追跡下のブロック解説が台帳と一致する", async () => {
   const { stdout } = await run(process.execPath, [CLI, "knowledge", "--check"])
   assert.match(stdout, /生成した層は最新/)
   assert.match(stdout, /12 カテゴリ \/ ブロック 131 件/)
-  assert.match(stdout, /定義のキー 12 個/)
+  assert.match(stdout, /定義のキー 21 個/)
 })
 
 test("解説が古いと --check が終了コード 1 で止まる", async () => {

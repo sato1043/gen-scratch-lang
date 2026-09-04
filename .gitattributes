@@ -5,6 +5,17 @@
 # catalog --check と knowledge --check が「古い」という誤った診断名で必ず落ちる。
 * text=auto eol=lf
 
-# 中身をそのまま持つもの
+# 中身をそのまま持つもの。
+#
+# 素材として追跡しうる形式を挙げる（Scratch が扱う 9 形式のうち svg 以外）。svg は
+# テキストなので挙げない ── 差分が読める側に置きたい。自動判定に任せると、中身の
+# 偏りで誤ってテキストと読まれた分だけ改行が書き換わる
 *.png binary
 *.sb3 binary
+*.jpg binary
+*.jpeg binary
+*.bmp binary
+*.gif binary
+*.wav binary
+*.wave binary
+*.mp3 binary

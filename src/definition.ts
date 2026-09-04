@@ -114,6 +114,133 @@ export const TOP_KEYS: Record<string, KeySpec> = {
   },
 }
 
+/**
+ * 素材として認める形式。公式検証器の schema の enum と同じ綴りにする。
+ *
+ * **認める側を挙げる。** 弾く側を挙げる形にすると、書き手が思い付いた綴り（`jpe`・
+ * `wave2`）を先回りできず、素通しに気づくのは Scratch が開けない .sb3 が出た後になる。
+ *
+ * 写しなので古びうる。上流と一致することは検査が照合する（`test/asset.test.ts`）。
+ * 出典は `node_modules/scratch-parser/lib/sb3_definitions.json` の
+ * `definitions.costume.properties.dataFormat.enum` と `definitions.sound.…`。
+ */
+export const COSTUME_FORMATS: string[] = ["png", "svg", "jpeg", "jpg", "bmp", "gif"]
+export const SOUND_FORMATS: string[] = ["wav", "wave", "mp3"]
+
+/**
+ * 中身から属性を導ける形式。
+ *
+ * ここに無い形式は、属性を書かなければ組み立てを止める。往復では属性が project.json から
+ * 来るので導出を通らず、この一覧は往復に影響しない。
+ */
+export const DERIVABLE_FORMATS: string[] = ["svg", "png", "wav"]
+
+/**
+ * zip に収める素材の名前（`md5ext`）が取る形。
+ *
+ * 出典は公式検証器の schema（`definitions.costume.properties.md5ext.pattern` と
+ * `definitions.sound.…`）。音の側が拡張子に数字を許す（`mp3`）ぶん広いので、そちらを
+ * 使う ── コスチュームの形はこの部分集合になる。
+ *
+ * **これは書き込み先の安全を、こちらの側で持つための検査である。** 名前は project.json が
+ * 名乗る値で、逃げ道（`--anyway`）を通れば検証器の判定を経ずにここへ届く。`../` を
+ * 含む名前を素材のファイル名として使えば、書き出し先の外へ書くことになる。
+ *
+ * 今は zip の読み手（JSZip 3.10.1）が名前を正規化するため、`../` を含む名前は
+ * そもそもエントリに当たらない（2026-09-04 実測。バイト列で組んだ zip でも
+ * `../../../slipped.txt` は `slipped.txt` として現れた）。**依存の挙動に頼らない** ──
+ * 読み手が変われば守りが消えるので、自分の側でも形を見る。
+ */
+export const MD5EXT = /^[a-fA-F0-9]{32}\.[a-zA-Z0-9]+$/
+
+/**
+ * `bitmapResolution` の既定値。**形式に依らず 1 である。**
+ *
+ * 1 度 2 へ変えて、実機で戻した（2026-09-04）。経緯を残す ── 同じ取り違えを繰り返さない
+ * ため。
+ *
+ * scratch-vm の `load-costume.js` は、ビットマップを取り込むとき `bitmapResolution = 2` を
+ * 立てる。これは事実である。**ただし同じ経路で画像を 2 倍へ拡大している**
+ * （`costume.bitmapResolution === 1 ? 2 : 1` の倍率）。「2 倍に拡大する」と「解像度 2 で
+ * 半分に戻す」が対になって元の大きさになる。
+ *
+ * **こちらは素材を拡大しない**（`素材を変換しない` は憲章から継いだ非目標）。対の片方だけを
+ * 持ってくると、絵は半分の大きさで出る。48×48 の PNG と SVG を並べた作品を Scratch
+ * エディタで開いて実測した ── 解像度 2 の PNG は、解像度 1 の SVG のちょうど半分だった。
+ *
+ * **一次情報の値は、その値が成り立つ前提ごと写す。** 前提（2 倍の拡大）を欠いたまま値だけを
+ * 採ると、出典が正しくても結果は誤る。
+ */
+export const BITMAP_RESOLUTION_FALLBACK = 1
+
+/**
+ * SVG の `bitmapResolution`。倍率を持たないので常に 1。
+ *
+ * **今はビットマップ側と同じ値だが、分けたままにする。** ビットマップの既定を動かす理由
+ * （Scratch の取り込みに合わせる等）は SVG に掛からない。1 つの定数を共有していると、
+ * 片方の都合で動かしたときに SVG が黙って巻き添えになる（CP6 で 4 観点が指摘した形）。
+ */
+export const SVG_RESOLUTION = 1
+
+/** 素材（コスチューム・音）の項に共通のキー */
+export const ASSET_KEYS: Record<string, KeySpec> = {
+  ファイル: {
+    type: "文字列",
+    effect:
+      "素材のファイル名。作品のディレクトリからの相対で、区切りは / で書く（外は指せない）",
+    omitted: "組み立てを止める（ファイルは省けない）",
+  },
+  名前: {
+    type: "文字列",
+    effect: "Scratch の中での呼び名。記法から名前で引くときの綴りになる",
+    omitted: "ファイル名の幹を使う",
+  },
+}
+
+/**
+ * コスチュームの項に書けるキー。
+ *
+ * 属性の綴りは .sb3 のままにする。この 3 つに定訳が無く、訳語を造ると辞書でも検索でも
+ * 引けない語が増えるため（読み取りの `FIELD_NAMES` が「覆っていない欄は生綴りのまま
+ * 出す」と決めているのと同じ扱い）。
+ */
+export const COSTUME_KEYS: Record<string, KeySpec> = {
+  ...ASSET_KEYS,
+  bitmapResolution: {
+    type: "数",
+    effect: "絵の 1 単位が何画素かの倍率。2 なら絵は半分の大きさで表示される",
+    omitted:
+      `${BITMAP_RESOLUTION_FALLBACK} になる（素材を拡大しないので、絵は元の画素数で出る）`,
+  },
+  rotationCenterX: {
+    type: "数",
+    effect: "回転の中心の横位置。絵の画素で数える",
+    omitted:
+      "絵の真ん中（svg は viewBox の原点を足した値）。導けない形式では組み立てを止める",
+  },
+  rotationCenterY: {
+    type: "数",
+    effect: "回転の中心の縦位置。絵の画素で数える",
+    omitted:
+      "絵の真ん中（svg は viewBox の原点を足した値）。導けない形式では組み立てを止める",
+  },
+}
+
+/** 音の項に書けるキー */
+export const SOUND_KEYS: Record<string, KeySpec> = {
+  ...ASSET_KEYS,
+  rate: {
+    type: "数",
+    effect: "1 秒あたりのサンプル数（Hz）。サンプリングレートのこと。誤ると音程がずれる",
+    omitted: "wav は中身から導く。導けない形式では組み立てを止める",
+  },
+  sampleCount: {
+    type: "数",
+    effect: "サンプルの総数。音の長さを決める。誤ると途中で切れる",
+    omitted: "wav は中身から導く。導けない形式では組み立てを止める",
+  },
+}
+
 /** ステージとスプライトに共通のキー */
 export const TARGET_KEYS: Record<string, KeySpec> = {
   スクリプト: {
@@ -143,6 +270,25 @@ export const TARGET_KEYS: Record<string, KeySpec> = {
       "外す。記法はスクリプトしか表せないので、この指定は定義が持つ",
     omitted: "どの定義も 1 巡ごとに画面を更新する（Scratch のエディタと同じ既定）",
   },
+  コスチューム: {
+    type: "並び",
+    effect:
+      `見た目の一覧。書いた順に番号が付く。各項は ${Object.keys(COSTUME_KEYS).join(" / ")} ` +
+      `を書ける対応で、形式は ${COSTUME_FORMATS.join(" / ")} のいずれか`,
+    omitted: "自前の四角 1 種を持つ（Scratch の既定素材は同梱しない）",
+  },
+  音: {
+    type: "並び",
+    effect:
+      `鳴らせる音の一覧。各項は ${Object.keys(SOUND_KEYS).join(" / ")} を書ける対応で、` +
+      `形式は ${SOUND_FORMATS.join(" / ")} のいずれか`,
+    omitted: "音を持たない",
+  },
+  今のコスチューム: {
+    type: "数",
+    effect: "はじめに見えているコスチュームの番号。1 始まりで、コスチュームの並びを数える",
+    fallback: 1,
+  },
 }
 
 /** スプライトに書けるキー */
@@ -167,6 +313,8 @@ export const LEVELS: { title: string; where: string; keys: Record<string, KeySpe
   { title: "最上位", where: "定義そのもの", keys: TOP_KEYS },
   { title: "ステージ", where: "`ステージ` の中", keys: TARGET_KEYS },
   { title: "スプライト", where: "`スプライト` の各項目", keys: SPRITE_KEYS },
+  { title: "コスチュームの項", where: "`コスチューム` の各項目", keys: COSTUME_KEYS },
+  { title: "音の項", where: "`音` の各項目", keys: SOUND_KEYS },
 ]
 
 /**

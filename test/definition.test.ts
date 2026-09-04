@@ -59,7 +59,7 @@ test("全てのキーが、省略したときの挙動を持つ", () => {
  * 借りると、既定値を変えたときに検査も仕様ページも一緒に動き、何も固定されない
  * （仕様ページは同じ表から組み直されるため、書類の側も pin にならない）。
  */
-const FALLBACKS = { x: 0, y: 0, 表示: true, 大きさ: 100, 向き: 90 }
+const FALLBACKS = { 今のコスチューム: 1, x: 0, y: 0, 表示: true, 大きさ: 100, 向き: 90 }
 
 test("既定値が実装と独立に固定されている", () => {
   for (const [key, value] of Object.entries(FALLBACKS)) {
@@ -73,17 +73,19 @@ test("既定値が実装と独立に固定されている", () => {
   assert.equal(withFallback.length, Object.keys(FALLBACKS).length)
 })
 
-test("定義に書けるキーは 12 個で、同じキーを二重に数えない", () => {
+test("定義に書けるキーは 21 個で、同じキーを二重に数えない", () => {
   // 件数は実装から借りず書き下す。借りると、実装がキーを落としたとき検査も一緒に縮む
-  assert.equal(definitionKeyCount(), 12)
+  assert.equal(definitionKeyCount(), 21)
 
-  // 最上位 3 + ステージ 4 + スプライト 10 = 17。名前・スクリプト・変数・リスト・
-  // 再描画しないブロックが 2 か所に出るため、場所ごとの合計はキーの数より 5 多い
+  // 最上位 3 + ステージ 7 + スプライト 13 + コスチュームの項 5 + 音の項 4 = 32。
+  // 名前が 4 か所、スクリプト・変数・リスト・再描画しないブロック・コスチューム・音・
+  // 今のコスチュームが 2 か所、ファイルが 2 か所に出るため、場所ごとの合計はキーの数
+  // より 11 多い
   const total = LEVELS.reduce((sum, level) => sum + Object.keys(level.keys).length, 0)
-  assert.equal(total, 17)
+  assert.equal(total, 32)
 })
 
-test("一覧が 3 つの場所すべてを見出しつきで載せる", () => {
+test("一覧が 5 つの場所すべてを見出しつきで載せる", () => {
   const table = definitionTable()
   for (const level of LEVELS) {
     assert.match(table, new RegExp(`### ${level.title}`), `${level.title} の見出しが無い`)
