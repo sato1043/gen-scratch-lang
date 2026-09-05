@@ -1010,8 +1010,9 @@ function menuInValueHint(ctx: SharedLabels, ja: string | null | undefined) {
 /**
  * 日本語の綴りが 2 件以上のブロックで重なっているものを集める。
  *
- * 重なる綴りは記法から一方しか呼べない（TASK0001 で 6 組と実測）。手掛かりを出すとき、
- * 重なっているかどうかで言うべきことが変わるため、事実として持つ。
+ * 重なる綴りは 6 組ある（TASK0001 で実測）。多くは引数の形で分かれて双方を呼べるが、分かれ
+ * ない書き方をされたときは別のブロックとして読まれる。手掛かりを出すとき、重なっているか
+ * どうかで言うべきことが変わるため、事実として持つ。
  */
 function sharedLabelsOf(catalog: LoadedCatalog): Set<string> {
   const seen = new Set<string>()

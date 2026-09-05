@@ -15,6 +15,7 @@ source-tasks:
  - TASK0013_guide-for-reading
  - TASK0029_custom-blocks-and-warp
  - TASK0025_carry-assets-through-roundtrip
+ - TASK0031_resolve-spelling-collisions
 relates-to:
  - FEAT0001
  - FEAT0002

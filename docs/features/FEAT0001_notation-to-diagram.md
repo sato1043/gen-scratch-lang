@@ -7,6 +7,7 @@ source-tasks:
  - TASK0001_words-to-scratch-pipeline
  - TASK0010_announcements-on-one-path
  - TASK0016_keep-values-through-roundtrip
+ - TASK0031_resolve-spelling-collisions
 ---
 
 記法からブロック図

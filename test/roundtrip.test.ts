@@ -125,6 +125,29 @@ test("入れ子のブロックと C 型の中身も往復する", async () => {
   assert.deepEqual(after, before, `戻した記法:\n${back}`)
 })
 
+test("綴りが重なるブロックも、読み替えた側のまま往復する", async () => {
+  // 読み取りは台帳の綴りで書き出すので、戻した記法は元と同じ重なりを持つ。解析の読み替え
+  // が同じ側へ届かなければ、往復で別のブロックへ化ける
+  const { before, after, back } = await roundTrip(
+    [
+      "[a v] を ((30) の [sin v]) にする",
+      "[a v] を ([もちもの v] の長さ) にする",
+      "[a v] を (音量 :: sensing) にする",
+      "[a v] を (音量) にする",
+    ].join("\n"),
+  )
+
+  assert.deepEqual(after, before, `戻した記法:\n${back}`)
+  for (const identifier of [
+    "OPERATORS_MATHOP",
+    "DATA_LENGTHOFLIST",
+    "SENSING_LOUDNESS",
+    "SOUND_VOLUME",
+  ]) {
+    assert.ok(before.includes(identifier), `読み替えが効いていない: ${identifier}`)
+  }
+})
+
 test("ブロック定義と呼び出しも往復する", async () => {
   const { before, after, back } = await roundTrip(
     [

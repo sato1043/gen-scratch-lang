@@ -169,19 +169,32 @@ node src/cli.ts knowledge --check
 - `sensing_userid`
 - `sound_sounds_menu`
 
-### 日本語の綴りが衝突して記法から呼べないブロック（5 件）
+### 素の綴りでは呼べないブロック（1 件）
 
-同じ日本語ラベルを持つ組が 6 組ある。記法からは一方しか呼べない。
-どちらが呼ばれるかは実際に解析器へ通して確かめたものである。
+同じ日本語ラベルを持つ組が 6 組ある。多くは引数の形で分かれるので
+両方を呼べる。分ける手掛かりを綴りの中に持たない組だけがここへ残る。
+**カテゴリを明示すれば呼べる**ものも含むので、下の規則と併せて読む ── 素の綴りを
+解析器へ通して確かめた結果であり、「どう書いても呼べない」ではない。
 
 | 綴り | 記法から呼べる | 呼べない |
 |---|---|---|
-| `%1 の効果を %2 ずつ変える` | `LOOKS_CHANGEEFFECTBY` | `SOUND_CHANGEEFFECTBY` |
-| `%1 の効果を %2 にする` | `LOOKS_SETEFFECTTO` | `SOUND_SETEFFECTO` |
+| `%1 の効果を %2 ずつ変える` | `LOOKS_CHANGEEFFECTBY` / `SOUND_CHANGEEFFECTBY` | （無し） |
+| `%1 の効果を %2 にする` | `LOOKS_SETEFFECTTO` / `SOUND_SETEFFECTO` | （無し） |
 | `音量` | `SOUND_VOLUME` | `SENSING_LOUDNESS` |
-| `%2 の %1` | `SENSING_OF` | `OPERATORS_MATHOP` |
-| `%1 の長さ` | `OPERATORS_LENGTH` | `DATA_LENGTHOFLIST` |
+| `%2 の %1` | `SENSING_OF` / `OPERATORS_MATHOP` | （無し） |
+| `%1 の長さ` | `OPERATORS_LENGTH` / `DATA_LENGTHOFLIST` | （無し） |
 | `%1 に %2 が含まれる` | `OPERATORS_CONTAINS` / `DATA_LISTCONTAINSITEM` | （無し） |
+
+### 綴りの重なりを解く規則（3 件）
+
+同じ綴りで解析されたブロックを、引数の形やカテゴリの明示で分ける。分けた結果は図と
+.sb3 の双方に効く。
+
+| 解析器が返す | 読み替える先 | 分ける手掛かり |
+|---|---|---|
+| `SENSING_OF` | `OPERATORS_MATHOP` | 「%2 の %1」を sensing_of と operator_mathop が共有する。解析器は sensing_of を選ぶ。属性の取得は第 1 位置に**対象**の選択肢を取り（日本語は「対象 の 属性」の順）、数学の関数は数を取るので、第 1 位置の形と末尾の名の 2 つで分かれる |
+| `OPERATORS_LENGTH` | `DATA_LENGTHOFLIST` | 「%1 の長さ」を operator_length と data_lengthoflist が共有する。解析器は operator_length を選ぶ。文字の長さは値を取り、リストの長さはリストの名前を選択肢で取るので、引数の形で分かれる |
+| `SOUND_VOLUME` | `SENSING_LOUDNESS` | 「音量」を sound_volume と sensing_loudness が共有する。どちらも引数を持たないため綴りの中に手掛かりが無い。記法のカテゴリの明示（`:: sensing`）だけが分ける |
 <!-- 台帳から生成: ここまで -->
 
 __END__

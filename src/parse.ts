@@ -5,6 +5,7 @@
  */
 import { loadScratchblocks } from "./env.ts"
 import { reasonOf } from "./errors.ts"
+import { disambiguateBlock } from "./disambiguate.ts"
 
 /**
  * 解析に用いる辞書。英語を外せないのは、C 型ブロックを閉じる `end` が英語辞書に
@@ -16,10 +17,15 @@ export const LANGUAGES = ["ja", "en"]
 /**
  * 記法を解析する。
  * `code` は日本語のブロック記法。戻りは scratchblocks の Document。
+ *
+ * 解析した直後に、綴りが重なったブロックの識別子を読み替える。図も .sb3 もこの戻りから
+ * 導くので、ここで直せば両方が同じものを指す。
  */
 export async function parseNotation(code: string): Promise<any> {
   const { sb } = await loadScratchblocks()
-  return sb.parse(withoutCarriageReturns(code), { languages: LANGUAGES })
+  const doc = sb.parse(withoutCarriageReturns(code), { languages: LANGUAGES })
+  for (const block of eachBlock(doc)) disambiguateBlock(block)
+  return doc
 }
 
 /**

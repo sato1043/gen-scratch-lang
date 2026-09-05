@@ -10,6 +10,7 @@ import { CATALOG_KEYS, type Catalog, type CatalogArgument, type Entry, type Scop
 import { LEVELS, omissionOf } from "./definition.ts"
 import { PREFIXES, isKind, prefixOf } from "./notation.ts"
 import { eachBlock, parseNotation } from "./parse.ts"
+import { rules } from "./disambiguate.ts"
 
 /**
  * 生成した層を囲む目印。この間だけを差し替える。
@@ -354,9 +355,9 @@ export type Collision = {
  * 名に「ラベルの」を入れるのは、宣言の ID が衝突する別の検査（`project.ts`）と
  * 同じ名だったためである。同じ名で別の概念を指すと、読み手が同一のものと誤読する。
  *
- * 同じ日本語ラベルを持つブロックが複数あると、記法からは一方しか呼べない。どちらが呼ばれる
- * かは辞書の並びで決まるため、推測せず綴りを組んで解析器に通す。引数の形（値かドロップ
- * ダウンか）で区別が付く組もあるので、組ごとに全員ぶん試す。
+ * 同じ日本語ラベルを持つブロックが複数あっても、引数の形で分かれる組は双方を呼べる。分かれ
+ * ないときにどちらが呼ばれるかは辞書の並びで決まるため、推測せず綴りを組んで解析器に通す。
+ * 組ごとに全員ぶん試し、選択肢は台帳の実物で埋める。
  *
  */
 export async function labelCollisions(
@@ -400,15 +401,24 @@ export async function labelCollisions(
 
 /**
  * 記法の綴りへ、引数の種別に応じた値を埋める。解析器に通せる形にするためだけに使う。
+ *
+ * **選択肢を持つ引数には台帳の実物の選択肢を埋める。** 架空の値で埋めると、選択肢の値で
+ * 分かれる組（音と見た目の効果）が同じ記法になり、解析器へ通しても分かれない。分かれる
+ * ものを「一方しか呼べない」と申告してしまう（2026-09-04 実測。2 組が該当した）。
+ *
  * `block` は台帳の項目。
  */
 function fillArgs(block: Entry & { ja: string }) {
   return block.ja.replace(/%(\d+)/g, (_: string, index: string) => {
-    const kind = block.inputs[Number(index) - 1] ?? PREFIXES.STRING
+    const at = Number(index) - 1
+    const kind = block.inputs[at] ?? PREFIXES.STRING
     if (isKind(kind, PREFIXES.BOOLEAN)) return "<マウスが押された>"
     if (isKind(kind, PREFIXES.NUMBER)) return "(1)"
     if (isKind(kind, PREFIXES.COLOUR)) return "[#ff0000]"
-    return isKind(kind, PREFIXES.MENU) ? "[なにか v]" : "[x]"
+    if (!isKind(kind, PREFIXES.MENU)) return "[x]"
+    // 選択肢を持たないメニュー（リスト名・変数名など）は名前を書く欄なので架空の名で足りる
+    const [first] = Object.keys(block.args?.[at]?.options ?? {})
+    return first === undefined ? "[なにか v]" : `[${first} v]`
   })
 }
 
@@ -428,10 +438,12 @@ export function scopeReport(catalog: Catalog, found: Collision[]): string {
 
   const unreachable = found.flatMap(item => item.unreachable)
   lines.push(
-    `### 日本語の綴りが衝突して記法から呼べないブロック（${unreachable.length} 件）`,
+    `### 素の綴りでは呼べないブロック（${unreachable.length} 件）`,
     "",
-    `同じ日本語ラベルを持つ組が ${found.length} 組ある。記法からは一方しか呼べない。`,
-    "どちらが呼ばれるかは実際に解析器へ通して確かめたものである。",
+    `同じ日本語ラベルを持つ組が ${found.length} 組ある。多くは引数の形で分かれるので`,
+    "両方を呼べる。分ける手掛かりを綴りの中に持たない組だけがここへ残る。",
+    "**カテゴリを明示すれば呼べる**ものも含むので、下の規則と併せて読む ── 素の綴りを",
+    "解析器へ通して確かめた結果であり、「どう書いても呼べない」ではない。",
     "",
     "| 綴り | 記法から呼べる | 呼べない |",
     "|---|---|---|",
@@ -443,7 +455,32 @@ export function scopeReport(catalog: Catalog, found: Collision[]): string {
         ` ${item.unreachable.length > 0 ? item.unreachable.map(code).join(" / ") : "（無し）"} |`,
     )
   }
+
+  lines.push("", ...disambiguationReport())
   return lines.join("\n")
+}
+
+/**
+ * 綴りの重なりを解く規則を markdown にする。
+ *
+ * 上の表は素の綴りだけを測るので、読み替えで届くようになったものが「呼べる」側にいる
+ * 理由が読めない。何がどう分けているかをここで示す。
+ */
+function disambiguationReport(): string[] {
+  const items = rules()
+  const lines = [
+    `### 綴りの重なりを解く規則（${items.length} 件）`,
+    "",
+    "同じ綴りで解析されたブロックを、引数の形やカテゴリの明示で分ける。分けた結果は図と",
+    ".sb3 の双方に効く。",
+    "",
+    "| 解析器が返す | 読み替える先 | 分ける手掛かり |",
+    "|---|---|---|",
+  ]
+  for (const rule of items) {
+    lines.push(`| ${code(rule.from)} | ${code(rule.to)} | ${rule.reason} |`)
+  }
+  return lines
 }
 
 /** 覆わない範囲の 1 項目を 1 行にする */

@@ -55,12 +55,14 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
 ### 🚛✔️ SREQ0001 日本語の記法からブロック図を得る
 
 - 由来ビジネス要求: BREQ0001
-- 収集元: TASK0001_words-to-scratch-pipeline
+- 収集元: TASK0001_words-to-scratch-pipeline, TASK0031_resolve-spelling-collisions
 - 実現機能: FEAT0001
 - 品質特性: 機能適合性
 - 実現状況: 実現済み
 - 履歴:
   - 🚛✔️ TASK0001 で実現（SVG / PNG の出力と、認識できない記述での停止）
+  - 🚛✔️ TASK0031 で拡張（綴りの重なるブロックが、読み替えた後のカテゴリで
+    描かれる）
 - 覆わない範囲: 英語ラベルでの入出力。図の配色や体裁の指定。図から記法への逆変換
 
 日本語のブロック記法を書いたファイルを渡すと、ブロック図を SVG または PNG で得られる。
@@ -71,7 +73,8 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
 - 由来ビジネス要求: BREQ0002
 - 収集元: TASK0001_words-to-scratch-pipeline, TASK0005_upstream-drift-and-supply-chain,
   TASK0024_pen-blocks-and-extensions, TASK0026_watch-the-versions-we-copied-from,
-  TASK0029_custom-blocks-and-warp
+  TASK0029_custom-blocks-and-warp, TASK0031_resolve-spelling-collisions,
+  TASK0032_watch-the-rewriting-we-added
 - 実現機能: FEAT0002
 - 品質特性: 機能適合性, 保守性
 - 実現状況: 実現中
@@ -84,6 +87,8 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
   - 🚛✔️ TASK0029 で拡張（利用者が自分で作るブロックを台帳へ通す。綴りも引数の数も
     利用者が決めるため、引数を解けないことを申告の側で分けた）
   - 📢🔛 TASK0026 で提案（写し元の版で陳腐化を見張る。起票済み・未着手）
+  - 🚛✔️ TASK0031 で拡張（綴りの重なりを引数の形とカテゴリの明示で解く規則を
+    持ち、覆わない範囲の申告が実態に合った。検出器の較正で偽の申告 2 件が消えた）
 - 覆わない範囲: ペン以外の拡張機能ブロック（音楽・micro:bit 等）。台帳の内容そのものを
   人が編集する経路（台帳は生成物である）。上流が定義を失った表（旧版が出典の影ブロック・
   メニューの内部値）の照合 —— これらは出典の版が動いたことしか分からず、中身の食い違いは
@@ -99,7 +104,8 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
 
 - 由来ビジネス要求: BREQ0001
 - 収集元: TASK0001_words-to-scratch-pipeline, TASK0024_pen-blocks-and-extensions,
-  TASK0025_carry-assets-through-roundtrip, TASK0029_custom-blocks-and-warp
+  TASK0025_carry-assets-through-roundtrip, TASK0029_custom-blocks-and-warp,
+  TASK0031_resolve-spelling-collisions
 - 実現機能: FEAT0003
 - 品質特性: 機能適合性, 信頼性
 - 実現状況: 実現済み
@@ -111,6 +117,8 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
     引数名を解析器が決めた値から取る。定義と呼び出しの綴りが割れない）
   - 🚛✔️ TASK0025 で拡張（作品定義がコスチュームと音を取り込み、書かれていない属性を
     素材の中身から導く。導けない形式は書くべきキーを名指して止まる）
+  - 🚛✔️ TASK0031 で拡張（数学の関数 14 種・リストの長さ・音の大きさを記法から
+    書けるようにした）
 - 覆わない範囲: 画像・音声素材の作成（利用者が用意した素材の取り込みは扱う。素材を
   1 つも書かない作品には最小の 1 種を同梱する）。素材の変換（解像度の変更・形式の変換・
   音の切り貼り）。JPEG / BMP / GIF / MP3 の属性の導出（書けば通る）。Scratch
@@ -125,7 +133,7 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
 - 収集元: TASK0001_words-to-scratch-pipeline, TASK0003_definition-spec-and-input-checks,
   TASK0006_guidance-and-recovery, TASK0007_report-and-check-refinements,
   TASK0010_announcements-on-one-path, TASK0017_agent-entry-for-authoring,
-  TASK0018_heading-reference-guard
+  TASK0018_heading-reference-guard, TASK0031_resolve-spelling-collisions
 - 実現機能: FEAT0004, FEAT0005
 - 品質特性: 機能適合性, 使用性
 - 実現状況: 実現済み
@@ -138,6 +146,8 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
   - 🚛✔️ TASK0017 で拡充（エージェント向けの発火点。知識層のどのページを見るかと
     CLI の起動の形を案内する）
   - 🚛✔️ TASK0018 で拡充（見出しを名指す参照の記法と、宙に浮いた参照を見張る検査）
+  - ✂️🔛 TASK0031 で拡張（同じ綴りのブロックを書き分ける手順と、分かれる条件を
+    知識層へ載せた）
 - 覆わない範囲: 対話的な入力補助（補完・言語サーバ）。誤りの自動修正（示すに留める）。
   Scratch の一般的な入門解説（本プロダクトの記法に固有の知識に限る）。申告が誤りの場所を
   どう指すか（SREQ0007 が扱う。本要求は場所でなく、次に何をすればよいかを受け持つ）。
@@ -159,10 +169,11 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
 - 収集元: TASK0002_read-sb3-projects, TASK0015_read-refused-projects,
   TASK0009_output-contract-for-read, TASK0010_announcements-on-one-path,
   TASK0016_keep-values-through-roundtrip, TASK0013_guide-for-reading,
-  TASK0025_carry-assets-through-roundtrip, TASK0029_custom-blocks-and-warp
+  TASK0025_carry-assets-through-roundtrip, TASK0029_custom-blocks-and-warp,
+  TASK0031_resolve-spelling-collisions, TASK0032_watch-the-rewriting-we-added
 - 実現機能: FEAT0005
 - 品質特性: 機能適合性, 使用性
-- 実現状況: 実現済み
+- 実現状況: 実現中
 - 履歴:
   - 📢🔛 TASK0002 で提案（起票済み・未着手）
   - 🚛✔️ TASK0002 で実現（記法・図・要約・作品定義の書き出しと、記法にできない
@@ -179,6 +190,8 @@ Scratch はブロックのドラッグ&ドロップしか入力経路を持た�
     残らず、再描画しない指定は記法に表せないので作品定義の側へ戻す）
   - 🚛✔️ TASK0025 で拡張（素材のバイト列を書き出し、作品定義がその名前で指す。属性は
     出典が持っていたものだけを写す。取り出せない素材は定義からも外し、件数を申告する）
+  - 🚛✔️ TASK0031 で拡張（読み替えたブロックが往復で保たれる。記法がカテゴリを
+    明示していれば、それと食い違う読み替えを断る）
 - 覆わない範囲: .sb3 の編集と書き戻し。プロジェクトの実行・シミュレーション。Scratch
   のウェブサイトからの作品取得。素材の中身の解釈（バイト列としてのみ写す）。逃げ道を通した
   読み取りの正しさ（Scratch で開けること・組み立て直せること・記法が実物と一致する

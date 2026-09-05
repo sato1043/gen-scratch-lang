@@ -7,6 +7,7 @@ source-tasks:
  - TASK0005_upstream-drift-and-supply-chain
  - TASK0024_pen-blocks-and-extensions
  - TASK0029_custom-blocks-and-warp
+ - TASK0031_resolve-spelling-collisions
 ---
 
 ブロックの台帳

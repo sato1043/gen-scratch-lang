@@ -576,14 +576,23 @@ test("色の欄へ色でない値を書くのは止め続ける", async () => {
   assert.equal(problems[0].kind, "引数の書き方が台帳と噛み合わない")
 })
 
-test("綴りが重なるブロックでは、v を外す直し方へ誘導しない", async () => {
-  // `([記録 v] の長さ)` を止めたあと `([記録] の長さ)` へ直すと、リストの長さでなく
-  // 文字列の長さになった .sb3 が問題 0 件で出る。手掛かりがそちらへ押してはいけない
-  const { problems } = await serialize("([記録 v] の長さ)", { list: ["記録"] })
-  assert.equal(problems.length, 1)
-  assert.equal(problems[0].kind, "引数の書き方が台帳と噛み合わない")
-  assert.match(detailOf(problems[0]), /別のブロックとして読まれた疑い/)
-  assert.doesNotMatch(detailOf(problems[0]), /値は \(1\) か \[文字\] の形で書く/)
+test("重なった綴りのリストの長さが、読み替えでリストの側へ届く", async () => {
+  // 解析器は「%1 の長さ」を operator_length として返す。引数が選択肢ならリストの長さ
+  // なので読み替える。読み替えが無いと、値の欄に選択肢を書いた誤りとして止まっていた
+  const { blocks, problems } = await serialize("([記録 v] の長さ)", { list: ["記録"] })
+  assert.deepEqual(problems, [])
+  const block = find(blocks, "data_lengthoflist")
+  assert.equal(block.fields.LIST[0], "記録")
+})
+
+test("文字の長さは読み替えず、文字列の側に残る", async () => {
+  // 読み替えの条件を「引数が選択肢」に絞ってあることを、逆の入力で測る。緩めると
+  // 文字の長さがリストの長さへ化ける
+  for (const code of ["([こんにちは] の長さ)", "((記録) の長さ)"]) {
+    const { blocks, problems } = await serialize(code, { variable: ["記録"] })
+    assert.deepEqual(problems, [], `正当な記法を止めている: ${code}`)
+    assert.ok(find(blocks, "operator_length"), `文字の長さが残っていない: ${code}`)
+  }
 })
 
 test("綴りが重ならないブロックでは、重なりを騙らない", async () => {

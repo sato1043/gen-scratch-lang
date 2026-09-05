@@ -249,16 +249,33 @@ test("日本語の綴りが衝突する組を数え、どちらが呼ばれる�
 
   // 実測値。台帳や解析器の辞書が変われば動く
   assert.equal(found.length, 6, "衝突する綴りの数が違う")
-  assert.equal(found.flatMap(item => item.unreachable).length, 5, "呼べないブロックの数が違う")
+  assert.equal(found.flatMap(item => item.unreachable).length, 1, "呼べないブロックの数が違う")
 
   // 引数の形で見分けが付く組は、双方とも呼べる
   const contains = found.find(item => item.ja === "%1 に %2 が含まれる")
   assert.deepEqual(contains!.unreachable, [], "引数の形で解ける組を呼べない側に数えている")
 
-  // 呼べる側の判定は推測でなく解析器の答えである
+  // 呼べる側の判定は推測でなく解析器の答えである。読み替えを通した後の答えを見る
   const length = found.find(item => item.ja === "%1 の長さ")
-  assert.deepEqual(length!.unreachable, ["DATA_LENGTHOFLIST"])
-  assert.ok(length!.tried.every((t: { reaches: string }) => t.reaches === "OPERATORS_LENGTH"))
+  assert.deepEqual(length!.unreachable, [])
+  assert.deepEqual(
+    [...new Set(length!.tried.map((t: { reaches: string }) => t.reaches))].sort(),
+    ["DATA_LENGTHOFLIST", "OPERATORS_LENGTH"],
+    "引数の形で分かれた結果が解析器の答えに現れていない",
+  )
+
+  // 分ける手掛かりを持たない組だけが残る。音量は双方とも引数を持たないので、素の綴りに
+  // 差が出ない
+  const volume = found.find(item => item.ja === "音量")
+  assert.deepEqual(volume!.unreachable, ["SENSING_LOUDNESS"])
+
+  // 選択肢の値で分かれる組も、実物の選択肢で測れば双方へ届く
+  const effect = found.find(item => item.ja === "%1 の効果を %2 ずつ変える")
+  assert.deepEqual(effect!.unreachable, [])
+  assert.deepEqual(
+    [...new Set(effect!.tried.map((t: { reaches: string }) => t.reaches))].sort(),
+    ["LOOKS_CHANGEEFFECTBY", "SOUND_CHANGEEFFECTBY"],
+  )
 })
 
 test("覆わない範囲を群ごとに件数と一覧で申告する", async () => {
@@ -270,7 +287,11 @@ test("覆わない範囲を群ごとに件数と一覧で申告する", async ()
     assert.ok(report.includes(`### ${label}`), `${label} の群が落ちている`)
   }
   assert.match(report, /### core の外のカテゴリ（93 件）/)
-  assert.match(report, /### 日本語の綴りが衝突して記法から呼べないブロック（5 件）/)
+  assert.match(report, /### 素の綴りでは呼べないブロック（1 件）/)
+
+  // 読み替えで届くようになった組が「呼べる」側にいる理由を、規則として並べる
+  assert.match(report, /### 綴りの重なりを解く規則（3 件）/)
+  assert.match(report, /`SENSING_OF` \| `OPERATORS_MATHOP`/)
 
   // 識別子を持たない項目も綴りで引ける形で残す
   assert.match(report, /`go to front`/)
